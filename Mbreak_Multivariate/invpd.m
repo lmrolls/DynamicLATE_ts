@@ -1,0 +1,1 @@
+function  xinv = invpd(x)xinv = pinv(x);
