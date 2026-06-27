@@ -44,7 +44,7 @@ Results = Dynamic_LATE_Analysis(Y, D, Z, X, options);
 ### Example: `test_Dynamic_LATE_all_DGPs.m`
 The `test_Dynamic_LATE_all_DGPs.m` script executes a sequential test of the `Dynamic_LATE_Analysis.m` pipeline. It demonstrates the utility of the methodology across two Data Generating Processes (DGPs) defined in the paper's supplement to evaluate identification, estimation, and inference performance.
 
-#### Scenario 1: Section 5 (Subsample Estimation)
+#### Scenario 1 (Subsample Estimation)
 This scenario implements the linear IV regression model with exogenous covariates ($X_t$) defined by Equations (S.C.2) and (S.C.3).  
 * **Codebase Mapping**: Algorithmically, this is an adaptation of the `generate_data_tab67` subroutine from `runSection5_Simul.m` in the `sez5` directory. It replicates the exact setup employed to evaluate the Bias and MSE of the point estimators in **Tables 6 and 7**.
 * **Equations**:
@@ -52,7 +52,7 @@ This scenario implements the linear IV regression model with exogenous covariate
   $D_t = \theta Z_t + \gamma_2 X_t + e_t$
 * **Mechanism**: It evaluates the properties of the 2SLS and FGLS estimators on the strongly-identified subsample $\hat{S}_T$. In regimes 1 and 3, identification is local-to-zero ($\theta = d T^{-1/2}$). In Regime 2 (the anomaly), the instrument is irrelevant ($\theta = 0$), allowing the test to verify the consistency of $\hat{\beta}(\hat{S}_T)$ when identification fails over parts of the sample.
 
-#### Scenario 2: Section 6 (Robust Inference / Perverse Identification)
+#### Scenario 2 (Robust Inference / Perverse Identification)
 This scenario employs the baseline Model M1 (without exogenous covariates) but modifies the first-stage coefficient $\theta_t$ to create a "perverse identification" setting.  
 * **Codebase Mapping**: Computationally, this DGP is drawn directly from `runSection6_Simul.m` in the `sez6` directory. It implements the specific subroutine designed for the stress-test used to generate the size-adjusted power curves under perverse identification shown in **Figure 8**.
 * **Equations**:
@@ -69,19 +69,19 @@ run test_Dynamic_LATE_all_DGPs.m
 
 ## Replication of the Results
 
-### `sez4`: Testing for Identification Failure
+### `Section4`: Testing for Identification Failure
 Contains scripts to reproduce the Monte Carlo simulations and critical values of $F_T^*$ (Section 4).
 * `runSection4_Simul.m`: Master script to execute the simulation suite for Section 4 exhibits (e.g., Table 4, Table 5, Figure 5, Figure 6). Incorporates options for exact legacy replication (fixed random seeds, specific variance scaling).
 * `piLATE_Ftest.m`: Core function computing the supremum $\pi$-LATE $F_T^*$ statistic across possible structural breaks.
 * `Compute_CVs.m` / `RunMc_CVs_Fstat.m`: Subroutines located in `cvals/` to simulate the non-standard asymptotic distributions required for the critical values.
 
-### `sez5`: Subsample Estimation
+### `Section5`: Subsample Estimation
 Contains scripts to replicate the estimation properties detailed in Section 5.
 * `runSection5_Simul.m`: Master script to run the simulations evaluating the point estimators.
 * `est_2sls_pilate.m`: Implementation of the 2SLS estimator for the most strongly-identified subsample $\hat{S}_T$, featuring options for White (HC1) or Newey-West (HAC) standard errors.
 * `est_fgls_pilate.m`: Implementation of the FGLS estimator for seemingly unrelated regression (SUR) representations, relying on multivariate break detection algorithms.
 
-### `sez6`: Robust Inference
+### `Section6`: Robust Inference
 Contains the codebase for computing size and size-adjusted power of identification-robust tests (Section 6).
 * `runSection6_Simul.m`: Master script executing the computational suite for Tables 9-10 and Figures 7-8.
 * `robust_LATE_inference.m`: Unified engine generating the Anderson-Rubin, Lagrange Multiplier, and Conditional Likelihood Ratio statistics evaluated at the estimated partition $\hat{S}_T$.
