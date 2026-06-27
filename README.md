@@ -41,7 +41,7 @@ This function implements the sequential procedure described in the paper:
 Results = Dynamic_LATE_Analysis(Y, D, Z, X, options);
 ```
 
-### Example 1: `test_Dynamic_LATE_all_DGPs.m`
+### Example: `test_Dynamic_LATE_all_DGPs.m`
 The `test_Dynamic_LATE_all_DGPs.m` script executes a sequential test of the `Dynamic_LATE_Analysis.m` pipeline. It demonstrates the utility of the methodology across the three main Data Generating Processes (DGPs) defined in the paper's supplement to evaluate identification, estimation, and inference performance.
 
 #### Scenario 1: Section 4 (Identification Failure)
