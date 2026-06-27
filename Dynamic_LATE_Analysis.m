@@ -54,10 +54,9 @@ function Results_Table = Dynamic_LATE_Analysis(Y, D, Z, X, options)
 
     % Add dependency paths
     addpath(fullfile(pwd, 'm_break'));
-    addpath(fullfile(pwd, 'sez4', 'ftest'));
-    addpath(fullfile(pwd, 'sez5'));
-    p_sez6 = fullfile(pwd, 'sez6');
-    addpath(p_sez6, fullfile(p_sez6, 'helpers_Sec6'));
+    addpath(fullfile(pwd, 'Section4', 'ftest'));
+    addpath(fullfile(pwd, 'Section5'));
+    addpath(fullfile(pwd, 'Section6'));
 
     fprintf('\n[+] Starting asymptotic extraction on pi_L grid (H0: beta = %.2f)...\n', options.beta_H0);
 
