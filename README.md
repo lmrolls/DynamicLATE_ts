@@ -91,32 +91,3 @@ Contains the codebase for computing size and size-adjusted power of identificati
 * **`m_break`**: Contains the fundamental univariate dynamic programming routines for identifying structural changes and maximizing the first-stage F-statistic.
 * **`Mbreak_Multivariate`**: Contains the multivariate extensions utilized primarily for the FGLS/SUR estimation protocols in `sez5`.
 
-
-## System and Software Environment
-
-The results in the paper were obtained using the following computational environment.
-
-* **Software**:
-  * **MATLAB Version**: R2025b
-* **MATLAB Toolboxes Required**:
-  * Curve Fitting Toolbox
-  * Deep Learning Toolbox
-  * Econometrics Toolbox
-  * Financial Toolbox
-  * Global Optimization Toolbox
-  * Optimization Toolbox
-  * Parallel Computing Toolbox
-  * Statistics and Machine Learning Toolbox
-  * Symbolic Math Toolbox
-
-## References
-
-* Andrews, D. W. K., Moreira, M., & Stock, J. H. (2006). Optimal Two-Sided Invariant Similar Tests for Instrumental Variables Regression. *Econometrica*, 74(3), 715-752.
-* Bai, J., & Perron, P. (1998). Estimating and Testing Linear Models with Multiple Structural Changes. *Econometrica*, 66(1), 47-78.
-* Casini, A., McCloskey, A., Rolla, L., & Pala, R. (2025). Dynamic Local Average Treatment Effects in Time Series. *Unpublished manuscript*, University of Rome Tor Vergata.
-* Imbens, G. W., & Angrist, J. D. (1994). Identification and Estimation of Local Average Treatment Effects. *Econometrica*, 62(2), 467-475.
-* Lewis, D. J. (2022). Robust Inference in Models Identified via Heteroskedasticity. *Review of Economics and Statistics*, 104(3), 512-525.
-* Nakamura, E., & Steinsson, J. (2018). High-Frequency Identification of Monetary Non-Neutrality: The Information Effect. *The Quarterly Journal of Economics*, 133(3), 1283-1330.
-* Newey, W. K., & West, K. D. (1987). A Simple, Positive Semi-Definite, Heteroskedasticity and Autocorrelation Consistent Covariance Matrix. *Econometrica*, 55(3), 703-708.
-* Qu, Z., & Perron, P. (2007). Estimating and Testing Structural Changes in Multivariate Regressions. *Econometrica*, 75(2), 459-502.
-* Rigobon, R. (2003). Identification through Heteroskedasticity. *Review of Economics and Statistics*, 85(4), 777-792.
