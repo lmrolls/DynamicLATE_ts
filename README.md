@@ -1,6 +1,6 @@
 # Dynamic Local Average Treatment Effects in Time Series
 
-**Reproducibility Package for "Dynamic Local Average Treatment Effects in Time Series"**
+**Package for "Dynamic Local Average Treatment Effects in Time Series"**
 
 * **Date Assembled**: June 2026
 * **Author(s)**: Alessandro Casini, Adam McCloskey, Luca Rolla, Raimondo Pala
