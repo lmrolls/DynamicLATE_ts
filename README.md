@@ -87,7 +87,3 @@ Contains the codebase for computing size and size-adjusted power of identificati
 * `runSection6_Simul.m`: Master script executing the computational suite for Tables 9-10 and Figures 7-8.
 * `robust_LATE_inference.m`: Unified engine generating the Anderson-Rubin, Lagrange Multiplier, and Conditional Likelihood Ratio statistics evaluated at the estimated partition $\hat{S}_T$.
 
-### Core Dependencies
-* **`m_break`**: Contains the fundamental univariate dynamic programming routines for identifying structural changes and maximizing the first-stage F-statistic.
-* **`Mbreak_Multivariate`**: Contains the multivariate extensions utilized primarily for the FGLS/SUR estimation protocols in `sez5`.
-
