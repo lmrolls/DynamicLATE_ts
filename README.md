@@ -62,6 +62,7 @@ This function implements the sequential procedure described in the paper:
 ```matlab
 % options.piLow = 0.6; options.m_breaks = 5; options.Hac_option = true;
 Results = Dynamic_LATE_Analysis(Y, D, Z, X, options);
+```
 
 ## System and Software Environment
 
