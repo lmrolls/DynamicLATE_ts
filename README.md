@@ -13,39 +13,16 @@
 
 ## Overview
 
-This repository contains the code and data to reproduce the simulations and empirical results for the paper "Dynamic Local Average Treatment Effects in Time Series" (Casini, McCloskey, Rolla, & Pala, 2025). 
-
-This paper discusses identification, estimation, and inference on dynamic local average treatment effects (LATEs) in instrumental variables (IVs) settings. We document pervasive weak identification in applied work using IVs with time series data. However, we find that strong identification often holds in large subsamples for which the instrument induces changes in the treatment. Motivated by this, we introduce a method based on dynamic programming to detect the most strongly-identified subsample and show how to use this subsample to improve estimation and inference. We also develop new identification-robust inference procedures.
+This repository implements testing, estimation and inference based on IV in time series. It also contains the code and data to reproduce the simulations and empirical results based on the methods of Sections 4-6 in the paper. 
 
 The core methodological contributions are divided into three sections:
 1. **Section 4**: Proposes a pre-test for identification failure based on the supremum of the first-stage F-statistic over all possible data partitions ($F_T^*$). The test seeks to determine whether there is any subsample such that identification is strong.
-2. **Section 5**: Discusses the estimation of $\beta$ for the most strongly-identified subsample $\hat{S}_T$. We study the properties of the two-stage least-squares (2SLS) estimator and the feasible generalized least-squares (FGLS) estimator under autocorrelated errors.
-3. **Section 6**: Develops identification-robust inference for $\beta$ when the subsample $S_{0,T}$ is unknown. We construct identification-robust tests—namely, Anderson-Rubin (AR), Lagrange multiplier (LM), and conditional likelihood ratio (CLR) tests—evaluated at the estimated partition $\hat{S}_T$.
+2. **Section 5**: Estimates the most strongly-identified subsample and discusses the estimation of $\beta$ for the most strongly-identified subsample $\hat{S}_T$. 
+3. **Section 6**: Develops identification-robust inference for $\beta$. We construct identification-robust tests—namely, Anderson-Rubin (AR), Lagrange multiplier (LM), and conditional likelihood ratio (CLR) tests—evaluated at the estimated partition $\hat{S}_T$.
 
 ## Repository Structure
 
 The project is organized into separate directories mapping directly to the paper's sections, alongside core algorithmic dependencies and a unified user interface.
-
-### `sez4`: Testing for Identification Failure
-Contains scripts to reproduce the Monte Carlo simulations and critical values of $F_T^*$ (Section 4).
-* `runSection4_Simul.m`: Master script to execute the simulation suite for Section 4 exhibits (e.g., Table 4, Table 5, Figure 5, Figure 6). Incorporates options for exact legacy replication (fixed random seeds, specific variance scaling).
-* `piLATE_Ftest.m`: Core function computing the supremum $\pi$-LATE $F_T^*$ statistic across possible structural breaks.
-* `Compute_CVs.m` / `RunMc_CVs_Fstat.m`: Subroutines located in `cvals/` to simulate the non-standard asymptotic distributions required for the critical values.
-
-### `sez5`: Subsample Estimation
-Contains scripts to replicate the estimation properties detailed in Section 5.
-* `runSection5_Simul.m`: Master script to run the simulations evaluating the point estimators.
-* `est_2sls_pilate.m`: Implementation of the 2SLS estimator for the most strongly-identified subsample $\hat{S}_T$, featuring options for White (HC1) or Newey-West (HAC) standard errors.
-* `est_fgls_pilate.m`: Implementation of the FGLS estimator for seemingly unrelated regression (SUR) representations, relying on multivariate break detection algorithms.
-
-### `sez6`: Robust Inference
-Contains the codebase for computing size and size-adjusted power of identification-robust tests (Section 6).
-* `runSection6_Simul.m`: Master script executing the computational suite for Tables 9-10 and Figures 7-8.
-* `robust_LATE_inference.m`: Unified engine generating the Anderson-Rubin, Lagrange Multiplier, and Conditional Likelihood Ratio statistics evaluated at the estimated partition $\hat{S}_T$.
-
-### Core Dependencies
-* **`m_break`**: Contains the fundamental univariate dynamic programming routines for identifying structural changes and maximizing the first-stage F-statistic.
-* **`Mbreak_Multivariate`**: Contains the multivariate extensions (Qu and Perron, 2007) utilized primarily for the FGLS/SUR estimation protocols in `sez5`.
 
 ## Unified Routine: `Dynamic_LATE_Analysis.m`
 
@@ -90,6 +67,30 @@ To execute the full validation suite, run the following command from the MATLAB 
 ```matlab
 run test_Dynamic_LATE_all_DGPs.m
 ```
+
+### Replication of the results
+
+### `sez4`: Testing for Identification Failure
+Contains scripts to reproduce the Monte Carlo simulations and critical values of $F_T^*$ (Section 4).
+* `runSection4_Simul.m`: Master script to execute the simulation suite for Section 4 exhibits (e.g., Table 4, Table 5, Figure 5, Figure 6). Incorporates options for exact legacy replication (fixed random seeds, specific variance scaling).
+* `piLATE_Ftest.m`: Core function computing the supremum $\pi$-LATE $F_T^*$ statistic across possible structural breaks.
+* `Compute_CVs.m` / `RunMc_CVs_Fstat.m`: Subroutines located in `cvals/` to simulate the non-standard asymptotic distributions required for the critical values.
+
+### `sez5`: Subsample Estimation
+Contains scripts to replicate the estimation properties detailed in Section 5.
+* `runSection5_Simul.m`: Master script to run the simulations evaluating the point estimators.
+* `est_2sls_pilate.m`: Implementation of the 2SLS estimator for the most strongly-identified subsample $\hat{S}_T$, featuring options for White (HC1) or Newey-West (HAC) standard errors.
+* `est_fgls_pilate.m`: Implementation of the FGLS estimator for seemingly unrelated regression (SUR) representations, relying on multivariate break detection algorithms.
+
+### `sez6`: Robust Inference
+Contains the codebase for computing size and size-adjusted power of identification-robust tests (Section 6).
+* `runSection6_Simul.m`: Master script executing the computational suite for Tables 9-10 and Figures 7-8.
+* `robust_LATE_inference.m`: Unified engine generating the Anderson-Rubin, Lagrange Multiplier, and Conditional Likelihood Ratio statistics evaluated at the estimated partition $\hat{S}_T$.
+
+### Core Dependencies
+* **`m_break`**: Contains the fundamental univariate dynamic programming routines for identifying structural changes and maximizing the first-stage F-statistic.
+* **`Mbreak_Multivariate`**: Contains the multivariate extensions utilized primarily for the FGLS/SUR estimation protocols in `sez5`.
+
 
 ## System and Software Environment
 
