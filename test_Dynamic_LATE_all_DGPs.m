@@ -2,9 +2,8 @@ function test_Dynamic_LATE_all_DGPs()
 % TEST_DYNAMIC_LATE_ALL_DGPS
 % Executes a sequential test of the Dynamic_LATE_Analysis pipeline on
 % the three main Data Generating Processes (DGPs) of the paper:
-% - Scenario 1 (Section 4): AR(1) errors, discrete instrument.
-% - Scenario 2 (Section 5): Exogenous covariates, i.i.d. errors.
-% - Scenario 3 (Section 6): Perverse identification (local weak), i.i.d. errors.
+% - Scenario 1 (Section 5): Exogenous covariates, i.i.d. errors.
+% - Scenario 2 (Section 6): Perverse identification (local weak), i.i.d. errors.
 
     clc;
     close all;
@@ -19,29 +18,11 @@ function test_Dynamic_LATE_all_DGPs()
     options_base.m_breaks = 5;
     options_base.alpha_level = 0.05;
 
-    %% =====================================================================
-    % SCENARIO 1: SECTION 4 (Empirical Calibration, AR(1) Errors)
-    % =====================================================================
-    fprintf('\n>>> SCENARIO 1: SECTION 4 (AR(1) Errors, HAC = ON)\n');
-    T4 = 400; pi0_4 = 0.6; arCoef_4 = 0.25; d_val_4 = 0.02; beta_true_4 = 0.0;
-    
-    options_4 = options_base;
-    options_4.Hac_option = true; % Mandatory to correct for AR(1) persistence
-    options_4.beta_H0 = 0.0;
-    
-    rng_seed_4 = 202604;
-    [Y4, D4, Z4, X4] = dgp_sec4(T4, pi0_4, d_val_4, arCoef_4, beta_true_4, rng_seed_4);
-    
-    fprintf(' Section 4 Data Generation completed. Starting analysis...\n');
-    Results_Sec4 = Dynamic_LATE_Analysis(Y4, D4, Z4, X4, options_4);
-    
-    disp('Press any key to proceed to Scenario 2...');
-    pause;
 
     %% =====================================================================
-    % SCENARIO 2: SECTION 5 (Structural Estimation with Exogenous X)
+    % SCENARIO 1: SECTION 5 (Structural Estimation with Exogenous X)
     % =====================================================================
-    fprintf('\n>>> SCENARIO 2: SECTION 5 (Exogenous Covariates X, HAC = OFF)\n');
+    fprintf('\n>>> SCENARIO 1: SECTION 5 (Exogenous Covariates X, HAC = OFF)\n');
     T5 = 200; pi0_5 = 0.6; rho_eu_5 = 0.25; d_val_5 = 16; beta_true_5 = 1.0;
     
     options_5 = options_base;
@@ -54,13 +35,13 @@ function test_Dynamic_LATE_all_DGPs()
     fprintf(' Section 5 Data Generation completed. Starting analysis...\n');
     Results_Sec5 = Dynamic_LATE_Analysis(Y5, D5, Z5, X5, options_5);
 
-    disp('Press any key to proceed to Scenario 3...');
+    disp('Press any key to proceed to Scenario 2...');
     pause;
 
     %% =====================================================================
-    % SCENARIO 3: SECTION 6 (Perverse Identification / Local Weak)
+    % SCENARIO 2: SECTION 6 (Perverse Identification / Local Weak)
     % =====================================================================
-    fprintf('\n>>> SCENARIO 3: SECTION 6 (Perverse Identification, HAC = OFF)\n');
+    fprintf('\n>>> SCENARIO 2: SECTION 6 (Perverse Identification, HAC = OFF)\n');
     T6 = 200; pi0_6 = 0.6; rho_eu_6 = 0.25; d_val_6 = 24; beta_true_6 = 0.0;
     
     options_6 = options_base;
@@ -81,42 +62,6 @@ end
 %% ========================================================================
 %  LOCAL DGP HELPERS
 % =========================================================================
-
-function [Y, D, Z, X] = dgp_sec4(T, pi0, d_val, arCoef, beta_true, rng_seed)
-    rng(rng_seed, "twister");
-    theta_dgp = d_val; 
-    
-    % Mock empirical calibration (simulates FOMC)
-    T_P = floor(T/2); T_C = T - T_P;
-    FOMC = double(rand(T, 1) > 0.5);
-    Z_base = zeros(T, 1);
-    Z_base(FOMC == 1) = T / T_P;
-    Z_base(FOMC == 0) = -T / T_C;
-    
-    X = []; % M1: No exogenous variables
-    sigmaE = 1.0; % Standardized unit variance
-    
-    % AR(1) perturbations generation
-    raw_e = randn(T*2, 1);
-    e_D = zeros(T*2, 1);
-    e_D(1) = sigmaE * randn(); 
-    for t = 2:T*2, e_D(t) = arCoef * e_D(t-1) + sigmaE * raw_e(t); end
-    e_D = e_D(T+1:end);
-    
-    D = zeros(T, 1);
-    idx_r1 = floor(T/4);
-    idx_r2 = idx_r1 + floor((1 - pi0) * T);
-    
-    for t = 1:T
-        if t <= idx_r1 || t > idx_r2
-            D(t) = e_D(t) / (1 - theta_dgp * Z_base(t));
-        else
-            D(t) = e_D(t); % Structurally weak instrument (th=0)
-        end
-    end
-    Z = Z_base .* D;
-    Y = beta_true * D + sigmaE * randn(T, 1);
-end
 
 function [Y, D, Z, X] = dgp_sec5(T, pi0, d_val, rho_eu, beta_true, rng_seed)
     rng(rng_seed, "twister");

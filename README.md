@@ -42,16 +42,9 @@ Results = Dynamic_LATE_Analysis(Y, D, Z, X, options);
 ```
 
 ### Example: `test_Dynamic_LATE_all_DGPs.m`
-The `test_Dynamic_LATE_all_DGPs.m` script executes a sequential test of the `Dynamic_LATE_Analysis.m` pipeline. It demonstrates the utility of the methodology across the three main Data Generating Processes (DGPs) defined in the paper's supplement to evaluate identification, estimation, and inference performance.
+The `test_Dynamic_LATE_all_DGPs.m` script executes a sequential test of the `Dynamic_LATE_Analysis.m` pipeline. It demonstrates the utility of the methodology across two Data Generating Processes (DGPs) defined in the paper's supplement to evaluate identification, estimation, and inference performance.
 
-#### Scenario 1: Section 4 (Identification Failure)
-This scenario implements the DGP defined by Equation (S.C.1) in the supplement, calibrated to real data from Nakamura & Steinsson (2018).  
-* **Codebase Mapping**: This process is extracted from `runSection4_Simul.m` in the `sez4` directory, mirroring the exact data generation subroutine used to produce the **Raw Power curves in Figure 5**.
-* **Mechanism**: It simulates heteroskedasticity-based identification of monetary policy effects where the instrument $Z_t$ indicates FOMC announcement days.
-* **Errors**: The error term $e_t$ follows an AR(1) process: $e_t = \rho_e e_{t-1} + v_{e,t}$.
-* **Identification**: The structural equation for treatment is $D_t = e_t / (1 - \theta Z_t)$ in regimes 1 and 3, while in regime 2 (the anomaly), the instrument is irrelevant ($\theta=0$).
-
-#### Scenario 2: Section 5 (Subsample Estimation)
+#### Scenario 1: Section 5 (Subsample Estimation)
 This scenario implements the linear IV regression model with exogenous covariates ($X_t$) defined by Equations (S.C.2) and (S.C.3).  
 * **Codebase Mapping**: Algorithmically, this is an adaptation of the `generate_data_tab67` subroutine from `runSection5_Simul.m` in the `sez5` directory. It replicates the exact setup employed to evaluate the Bias and MSE of the point estimators in **Tables 6 and 7**.
 * **Equations**:
@@ -59,7 +52,7 @@ This scenario implements the linear IV regression model with exogenous covariate
   $D_t = \theta Z_t + \gamma_2 X_t + e_t$
 * **Mechanism**: It evaluates the properties of the 2SLS and FGLS estimators on the strongly-identified subsample $\hat{S}_T$. In regimes 1 and 3, identification is local-to-zero ($\theta = d T^{-1/2}$). In Regime 2 (the anomaly), the instrument is irrelevant ($\theta = 0$), allowing the test to verify the consistency of $\hat{\beta}(\hat{S}_T)$ when identification fails over parts of the sample.
 
-#### Scenario 3: Section 6 (Robust Inference / Perverse Identification)
+#### Scenario 2: Section 6 (Robust Inference / Perverse Identification)
 This scenario employs the baseline Model M1 (without exogenous covariates) but modifies the first-stage coefficient $\theta_t$ to create a "perverse identification" setting.  
 * **Codebase Mapping**: Computationally, this DGP is drawn directly from `runSection6_Simul.m` in the `sez6` directory. It implements the specific subroutine designed for the stress-test used to generate the size-adjusted power curves under perverse identification shown in **Figure 8**.
 * **Equations**:
