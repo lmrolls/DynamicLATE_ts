@@ -64,6 +64,33 @@ This function implements the sequential procedure described in the paper:
 Results = Dynamic_LATE_Analysis(Y, D, Z, X, options);
 ```
 
+### Example 1: `test_Dynamic_LATE_all_DGPs.m`
+The `test_Dynamic_LATE_all_DGPs.m` script executes a sequential test of the `Dynamic_LATE_Analysis.m` pipeline. It demonstrates the utility of the methodology across the three main Data Generating Processes (DGPs) defined in the paper's supplement to evaluate identification, estimation, and inference performance.
+
+#### Scenario 1: Section 4 (Identification Failure)
+This scenario implements the DGP defined by Equation (S.C.1) in the supplement, calibrated to real data from Nakamura & Steinsson (2018).  
+* **Mechanism**: It simulates heteroskedasticity-based identification of monetary policy effects where the instrument $Z_t$ indicates FOMC announcement days.
+* **Errors**: The error term $e_t$ follows an AR(1) process: $e_t = \rho_e e_{t-1} + v_{e,t}$.
+* **Identification**: The structural equation for treatment is $D_t = e_t / (1 - \theta Z_t)$ in regimes 1 and 3, while in regime 2 (the anomaly), the instrument is irrelevant ($\theta=0$).
+
+#### Scenario 2: Section 5 (Subsample Estimation)
+This scenario implements the linear IV regression model with exogenous covariates ($X_t$) defined by Equations (S.C.2) and (S.C.3).  
+* **Equations**:
+  $Y_t = \beta D_t + \gamma_1 X_t + u_t$
+  $D_t = \theta Z_t + \gamma_2 X_t + e_t$
+* **Mechanism**: It evaluates the properties of the 2SLS and FGLS estimators on the strongly-identified subsample $\hat{S}_T$. In Regime 2 (the anomaly), the instrument is irrelevant ($\theta = 0$), allowing the test to verify the consistency of $\hat{\beta}(\hat{S}_T)$ when identification fails over parts of the sample.
+
+#### Scenario 3: Section 6 (Robust Inference / Perverse Identification)
+This scenario employs the DGP from (S.C.2) and (S.C.3) but modifies the first-stage coefficient $\theta_t$ to create a "perverse identification" setting.  
+* **Mechanism**: We set $\theta_1 = \theta_3 = d T^{-1/2}$ (strong identification) and $\theta_2 = -0.5 \theta_1$ (perverse identification in the anomaly regime).
+* **Objective**: This tests the robustness of the identification-robust AR, LM, and CLR tests. It demonstrates that the proposed procedures remain valid even when the first-stage coefficient changes sign across regimes, a setting where full-sample IV estimators typically suffer from severe bias.
+
+**How to run the test:**
+To execute the full validation suite, run the following command from the MATLAB root directory:
+```matlab
+run test_Dynamic_LATE_all_DGPs.m
+```
+
 ## System and Software Environment
 
 The results in the paper were obtained using the following computational environment.
