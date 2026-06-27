@@ -46,7 +46,7 @@ The `test_Dynamic_LATE_all_DGPs.m` script executes a sequential test of the `Dyn
 
 #### Scenario 1 (Subsample Estimation)
 This scenario implements the linear IV regression model with exogenous covariates ($X_t$) defined by Equations (S.C.2) and (S.C.3).  
-* **Codebase Mapping**: Algorithmically, this is an adaptation of the `generate_data_tab67` subroutine from `runSection5_Simul.m` in the `sez5` directory. It replicates the exact setup employed to evaluate the Bias and MSE of the point estimators in **Tables 6 and 7**.
+* **Codebase Mapping**: Algorithmically, this is an adaptation of the `generate_data_tab67` subroutine from `runSection5_Simul.m` in the `Section5` directory. It replicates the exact setup employed to evaluate the Bias and MSE of the point estimators in **Tables 6 and 7**.
 * **Equations**:
   $Y_t = \beta D_t + \gamma_1 X_t + u_t$
   $D_t = \theta Z_t + \gamma_2 X_t + e_t$
@@ -54,7 +54,7 @@ This scenario implements the linear IV regression model with exogenous covariate
 
 #### Scenario 2 (Robust Inference / Perverse Identification)
 This scenario employs the baseline Model M1 (without exogenous covariates) but modifies the first-stage coefficient $\theta_t$ to create a "perverse identification" setting.  
-* **Codebase Mapping**: Computationally, this DGP is drawn directly from `runSection6_Simul.m` in the `sez6` directory. It implements the specific subroutine designed for the stress-test used to generate the size-adjusted power curves under perverse identification shown in **Figure 8**.
+* **Codebase Mapping**: Computationally, this DGP is drawn directly from `runSection6_Simul.m` in the `Section6` directory. It implements the specific subroutine designed for the stress-test used to generate the size-adjusted power curves under perverse identification shown in **Figure 8**.
 * **Equations**:
   $Y_t = \beta D_t + u_t$
   $D_t = \theta_t Z_t + e_t$
