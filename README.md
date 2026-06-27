@@ -68,7 +68,7 @@ To execute the full validation suite, run the following command from the MATLAB 
 run test_Dynamic_LATE_all_DGPs.m
 ```
 
-## Replication of the results
+## Replication of the Results
 
 ### `sez4`: Testing for Identification Failure
 Contains scripts to reproduce the Monte Carlo simulations and critical values of $F_T^*$ (Section 4).
