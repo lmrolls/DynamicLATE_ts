@@ -55,10 +55,13 @@ This scenario implements the linear IV regression model with exogenous covariate
 * **Equations**:
   $Y_t = \beta D_t + \gamma_1 X_t + u_t$
   $D_t = \theta Z_t + \gamma_2 X_t + e_t$
-* **Mechanism**: It evaluates the properties of the 2SLS and FGLS estimators on the strongly-identified subsample $\hat{S}_T$. In Regime 2 (the anomaly), the instrument is irrelevant ($\theta = 0$), allowing the test to verify the consistency of $\hat{\beta}(\hat{S}_T)$ when identification fails over parts of the sample.
+* **Mechanism**: It evaluates the properties of the 2SLS and FGLS estimators on the strongly-identified subsample $\hat{S}_T$. In regimes 1 and 3, identification is local-to-zero ($\theta = d T^{-1/2}$). In Regime 2 (the anomaly), the instrument is irrelevant ($\theta = 0$), allowing the test to verify the consistency of $\hat{\beta}(\hat{S}_T)$ when identification fails over parts of the sample.
 
 #### Scenario 3: Section 6 (Robust Inference / Perverse Identification)
-This scenario employs the DGP from (S.C.2) and (S.C.3) but modifies the first-stage coefficient $\theta_t$ to create a "perverse identification" setting.  
+This scenario employs the baseline Model M1 (without exogenous covariates) but modifies the first-stage coefficient $\theta_t$ to create a "perverse identification" setting.  
+* **Equations**:
+  $Y_t = \beta D_t + u_t$
+  $D_t = \theta_t Z_t + e_t$
 * **Mechanism**: We set $\theta_1 = \theta_3 = d T^{-1/2}$ (strong identification) and $\theta_2 = -0.5 \theta_1$ (perverse identification in the anomaly regime).
 * **Objective**: This tests the robustness of the identification-robust AR, LM, and CLR tests. It demonstrates that the proposed procedures remain valid even when the first-stage coefficient changes sign across regimes, a setting where full-sample IV estimators typically suffer from severe bias.
 
