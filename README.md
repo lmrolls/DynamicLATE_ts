@@ -24,7 +24,7 @@ The core methodological contributions are divided into three sections:
 
 ## Repository Structure
 
-The project is organized into modular directories mapping directly to the paper's sections, alongside core algorithmic dependencies and a unified user interface.
+The project is organized into separate directories mapping directly to the paper's sections, alongside core algorithmic dependencies and a unified user interface.
 
 ### `sez4`: Testing for Identification Failure
 Contains scripts to reproduce the Monte Carlo simulations and critical values of $F_T^*$ (Section 4).
