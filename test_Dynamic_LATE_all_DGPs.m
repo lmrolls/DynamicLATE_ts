@@ -29,14 +29,15 @@ function test_Dynamic_LATE_all_DGPs()
     options_5.Hac_option = false; % i.i.d. errors, White-robust (HC1) is sufficient
     options_5.beta_H0 = 1.0;      % Centering H0 on the true beta to verify size
     
+    disp('Press any key to proceed to Scenario 1...');
+    pause;
+
     rng_seed_5 = 202605;
     [Y5, D5, Z5, X5] = dgp_sec5(T5, pi0_5, d_val_5, rho_eu_5, beta_true_5, rng_seed_5);
     
     fprintf(' Section 5 Data Generation completed. Starting analysis...\n');
     Results_Sec5 = Dynamic_LATE_Analysis(Y5, D5, Z5, X5, options_5);
 
-    disp('Press any key to proceed to Scenario 2...');
-    pause;
 
     %% =====================================================================
     % SCENARIO 2: SECTION 6 (Perverse Identification / Local Weak)
@@ -48,6 +49,9 @@ function test_Dynamic_LATE_all_DGPs()
     options_6.Hac_option = false; % i.i.d. errors, White-robust (HC1) is sufficient
     options_6.beta_H0 = 0.0;
     
+    disp('Press any key to proceed to Scenario 2...');
+    pause;
+
     rng_seed_6 = 202606;
     [Y6, D6, Z6, X6] = dgp_sec6(T6, pi0_6, d_val_6, rho_eu_6, beta_true_6, rng_seed_6);
     
