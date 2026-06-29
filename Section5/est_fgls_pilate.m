@@ -1,5 +1,5 @@
 function [beta_hat, S_vec, dates] = est_fgls_pilate(Y, D, Z, X, pi0, m)
-    % Setup del sistema multivariato
+    % Multivariate system setup
     y_bar = [Y, D]; 
     little_Z = [Z, X];
     q = size(Z, 2); 
@@ -7,29 +7,27 @@ function [beta_hat, S_vec, dates] = est_fgls_pilate(Y, D, Z, X, pi0, m)
     T = size(Y, 1);
     R_selection = eye(2 * (q + p));
     
-    % 1. Identificazione break multivariata (Qu & Perron)
+    % 1. Multivariate break identification (Qu & Perron)
     datevec = mbreak_multivariate(y_bar, little_Z, R_selection, m);
     [maty, matz] = transf(y_bar, little_Z);
     T_multi = size(maty, 1);
     
-    % 2. Selezione Greedy multivariata
+    % 2. Multivariate Greedy selection
     dates_multi = S_Dates_multi_greedy_double_eq(maty, matz, datevec, T_multi, pi0, m, q, p);
     
-    % 3. Stima FGLS e generazione output
+    % 3. FGLS estimation and output generation
     [~, Xi_hat, S_index_multi] = FGLS_estimation_S(maty, matz, floor(pi0*T), q, p, dates_multi);
     
-    % Estrazione beta e mappatura S
+    % Beta extraction and S mapping
     beta_hat = extract_beta(Xi_hat, q, p);
     S_vec = S_index_multi(1:2:end);
     dates = [ (dates_multi(:,1)+1)/2, dates_multi(:,2)/2 ];
 end
 
-
 function beta = extract_beta(Xi, q, p)
     if p == 0, beta = Xi(1,1) / Xi(q+1,1); 
     else, beta = Xi(1,1) / Xi(p+q+1,1); end
 end
-
 
 function [Obj, Xi_hat_S, S_index] = FGLS_estimation_S(maty, matz_ST, T_pi, q, p, Sup_S)
     T_multi = size(maty, 1); S_index = zeros(T_multi, 1);
@@ -53,15 +51,15 @@ function [Obj, Xi_hat_S, S_index] = FGLS_estimation_S(maty, matz_ST, T_pi, q, p,
 end
 
 function Sup_S = S_Dates_multi_greedy_double_eq(maty, matz, datevec, T_multi, pi, m, q, p)
-    % Dimensioni in scala singola (T) e numero minimo di osservazioni (Tpi)
+    % Dimensions in single scale (T) and minimum number of observations (Tpi)
     T = floor(T_multi / 2); 
     Tpi = floor(pi * T);
     
-    % --- FIX CRITICO: Estrazione corretta della colonna m da datevec ---
+    % --- CRITICAL FIX: Correct column m extraction from datevec ---
     if isempty(datevec) || m == 0
         datevec = []; 
     else
-        % Prende SOLO le date del modello con m break (evita la frammentazione)
+        % Takes ONLY the dates of the model with m breaks (prevents fragmentation)
         datevec = datevec(1:m, m); 
         datevec = sort(unique(datevec(datevec>0 & datevec<T))); 
     end
@@ -70,19 +68,19 @@ function Sup_S = S_Dates_multi_greedy_double_eq(maty, matz, datevec, T_multi, pi
     Num_R = length(Full_B) - 1;
     Table_R = zeros(Num_R, 4);
     
-    % Calcolo Statistica F_sys per ogni regime
+    % F_sys statistic calculation for each regime
     for i = 1:Num_R
         S = Full_B(i)+1; 
         E = Full_B(i+1); 
         L = E-S+1; 
         
-        % Mappatura esatta sulla scala 2T per i dati interleaved
+        % Exact mapping on the 2T scale for interleaved data
         idx_2T = (S-1)*2+1 : E*2;
         [~, ~, F_sys] = OLS_Robust_multi_full(maty(idx_2T), matz(idx_2T,:), [], 0, q, p);
         Table_R(i,:) = [S, E, L, F_sys];
     end
     
-    % Ordinamento Greedy: dal regime col segnale più forte al più debole
+    % Greedy Sorting: from the regime with the strongest signal to the weakest
     Table_R = sortrows(Table_R, 4, 'descend');
     A = cumsum(Table_R(:,3)); 
     idx_L = find(A >= Tpi, 1, 'first');
@@ -101,21 +99,21 @@ function Sup_S = S_Dates_multi_greedy_double_eq(maty, matz, datevec, T_multi, pi
     E_t = Table_R(idx_L,2); 
     L_t = Table_R(idx_L,3);
     
-    % Selezione Finale / Sliding Window
+    % Final Selection / Sliding Window
     if L_t == Missing
-        % Incastro perfetto
+        % Perfect fit
         if idx_S < 1
             pi_D = Table_R(idx_L, 1:2); 
         else
             pi_D = Table_R(1:idx_L, 1:2); 
         end
     else
-        % Ricerca della finestra ottima (Sliding Window senza errori di indice)
+        % Optimal window search (Sliding Window without index errors)
         max_f = -1; 
         b_off = 0;
         
         for k = 0:(L_t-Missing)
-            % Indici precisi per estrarre coppie intatte Y/D nella scala 2T
+            % Precise indices to extract intact Y/D pairs in the 2T scale
             sub_idx = (S_t+k-1)*2+1 : (S_t+k+Missing-1)*2;
             [~,~,f] = OLS_Robust_multi_full(maty(sub_idx), matz(sub_idx,:), [], 0, q, p);
             
@@ -134,11 +132,10 @@ function Sup_S = S_Dates_multi_greedy_double_eq(maty, matz, datevec, T_multi, pi
         end
     end
     
-    % Riordino cronologico e riconversione in scala 2T per l'output SUR/FGLS
+    % Chronological reordering and reconversion into 2T scale for SUR/FGLS output
     pi_D = sortrows(pi_D, 1); 
     Sup_S = [(pi_D(:,1)-1)*2+1, pi_D(:,2)*2];
 end
-
 
 function [estimator, t_stat, Fstat] = OLS_Robust_multi_full(Y_s, Z_s, X_s, HAC, q, p)
     [n_2T, nvar] = size(Z_s); T = n_2T/2;

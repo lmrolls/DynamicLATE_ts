@@ -1,20 +1,19 @@
 function [beta_hat, S_vec, SE_robust, t_stat, dates] = est_2sls_pilate(Y, D, Z, X, pi0, m, Hac_option)
-% EST_2SLS_PILATE Calcola lo stimatore 2SLS sul sottocampione ottimo identificato
-% tramite la procedura Bai-Perron (Phase 1).
+% EST_2SLS_PILATE Computes the 2SLS estimator on the optimal sub-sample identified
+% via the Bai-Perron procedure (Phase 1).
 %
 % INPUTS:
-%   Y, D, Z, X : Vettori/Matrici dei dati originali
-%   pi0        : Frazione del campione
-%   m          : Numero di break strutturali (es. 5)
-%   Hac_option : (Opzionale) Booleano. Se true, applica Newey-West HAC.
-%                Se false o omesso, applica White HC1.
+%   Y, D, Z, X : Original data vectors and matrices
+%   pi0        : Sample fraction
+%   m          : Number of structural breaks (e.g., 5)
+%   Hac_option : (Optional) Boolean. If true, applies Newey-West HAC.
+%                If false or omitted, applies White HC1.
 
     % --- BACKWARD COMPATIBILITY BLOCK ---
-    % Se invocato dalle simulazioni di Sezione 5 (6 argomenti), forza HC1
+    % If invoked by Section 5 simulations (6 arguments), force HC1
     if nargin < 7 || isempty(Hac_option)
         Hac_option = false; 
     end
-
     T = size(Y, 1);
     q = size(Z, 2);
     p = size(X, 2);
@@ -48,11 +47,11 @@ function [beta_val, S_vec, SE_val, t_stat_val] = internal_ols_calc(Y, D, Z, X, S
     P_Instruments_c = Instruments_c * (Instruments_c' * Instruments_c)^-1 * Instruments_c';
     D_hat_c = P_Instruments_c * D_c;
     
-    % Separazione algebrica rigorosa: Regressori Proiettati vs Regressori Osservati
+    % Rigorous algebraic separation: Projected Regressors vs Observed Regressors
     Regressors_proj = [D_hat_c, X_c];
     Regressors_obs  = [D_c, X_c];
     
-    % Passaggio del parametro HAC alla subroutine di calcolo della covarianza
+    % Passing the HAC parameter to the covariance calculation subroutine
     [beta_hat_struct, SE_robust_struct, ~, ~, t_stat_struct] = OLS_Robust_2SLS(Y_c, Regressors_proj, Regressors_obs, T_eff, Hac_option);
     
     beta_val = beta_hat_struct(1);
@@ -61,41 +60,35 @@ function [beta_val, S_vec, SE_val, t_stat_val] = internal_ols_calc(Y, D, Z, X, S
 end
 
 function [beta_hat, SE_robust, CI, resid, t_stat] = OLS_Robust_2SLS(Y, X_proj, X_obs, T_eff, Hac_option)
-% Calcola lo stimatore 2SLS e l'inferenza asintotica (HAC o White-robusta).
-% Impiega X_proj per la stima puntuale e X_obs per i residui strutturali.
-
+% Computes the 2SLS estimator and asymptotic inference (HAC or White-robust).
+% Employs X_proj for point estimation and X_obs for structural residuals.
     [~, nvar] = size(X_proj);
-
     if size(Y, 2) > 1, Y = Y'; end
-
-    % 1. Stima Puntuale (Invariante rispetto all'HAC)
+    % 1. Point Estimation (HAC-invariant)
     beta_hat = (X_proj' * X_proj) \ (X_proj' * Y);
-
-    % 2. Residui Strutturali Corretti (Basati sulle endogene osservate)
+    % 2. Corrected Structural Residuals (Based on observed endogenous variables)
     resid = Y - X_obs * beta_hat;
-
-    % 3. Varianza Asintotica
+    % 3. Asymptotic Variance
     XX_inv = (X_proj' * X_proj) \ eye(nvar); 
     
     if Hac_option
         Lag = floor(T_eff^(1/3));
-        % NeweyWest calcola la somma dei cross-prodotti e divide gia' per (T_eff - nvar).
-        % Quindi J_hac = Q_sum / (T_eff - nvar).
+        % NeweyWest computes the sum of cross-products and already divides by (T_eff - nvar).
+        % Hence J_hac = Q_sum / (T_eff - nvar).
         J_hac = NeweyWest(resid, X_proj, Lag, 0);
         
-        % La formula sandwich HC1 è: (T_eff / (T_eff - nvar)) * XX_inv * Q_sum * XX_inv
-        % Sostituendo Q_sum = J_hac * (T_eff - nvar), i gradi di liberta' si semplificano.
-        % Il fattore di scala risultante che moltiplica la struttura diventa esattamente T_eff.
+        % The sandwich HC1 formula is: (T_eff / (T_eff - nvar)) * XX_inv * Q_sum * XX_inv
+        % Substituting Q_sum = J_hac * (T_eff - nvar), the degrees of freedom simplify.
+        % The resulting scaling factor multiplying the structure becomes exactly T_eff.
         VCE_robust = T_eff * (XX_inv * J_hac * XX_inv);
     else
-        % --- LEGACY BLOCK: Riproduzione esatta al bit per Sezione 5 (HC1 White) ---
+        % --- LEGACY BLOCK: Bit-exact reproduction for Section 5 (HC1 White) ---
         X_res = X_proj .* resid; 
         meat = X_res' * X_res;
         scale = T_eff / (T_eff - nvar);
         VCE_robust = scale * (XX_inv * meat * XX_inv);
     end
-
-    % 4. Inferenza
+    % 4. Inference
     SE_robust = sqrt(diag(VCE_robust));
     t_stat = beta_hat ./ SE_robust;
     CI = [beta_hat - 1.96 * SE_robust, beta_hat + 1.96 * SE_robust];
