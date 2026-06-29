@@ -1,28 +1,28 @@
 function Paper_Results = runSection4_Simul(n_sims_input, cv_reps_input, ar_scaling_option, cv_option, run_target)
-% RUNSECTION4_SIMUL Esegue la suite per la replica degli exhibit (Sezione 4).
+% RUNSECTION4_SIMUL Executes the simulation suite for exhibit replication (Section 4).
 %
-% SINTASSI:
-%   res = runSection4_Simul()                              % Default: Tutto (5000 sims, AR Legacy, CV Fisso)
-%   res = runSection4_Simul(5000, 10000, 1, 2, 'tab5')     % Runna ESCLUSIVAMENTE la Tabella 5
+% SYNTAX:
+%   res = runSection4_Simul()                              % Default: All (5000 sims, Legacy AR, Fixed CV)
+%   res = runSection4_Simul(5000, 10000, 1, 2, 'tab5')     % Runs EXCLUSIVELY Table 5
 %
-% INPUT:
-%   n_sims_input      : Numero di simulazioni Monte Carlo (Default: 5000)
-%   cv_reps_input     : Numero di repliche per il CV asintotico (Default: 10000)
-%   ar_scaling_option : 1 = Legacy Non Riscalato (Varianza inflazionata) - RIPRODUCIBILITA' ESATTA
-%                       2 = Riscalato (Varianza incondizionata fissa pari a sigma^2)
-%   cv_option         : 1 = Simulato Asintoticamente (tramite Compute_CVs)
-%                       2 = Fisso Legacy (8.28 per F*, 3.84 per Full-Sample) - RIPRODUCIBILITA' ESATTA
-%   run_target        : Sezione da eseguire -> 'all' (default), 'fig5', 'tab5', 'fig6'
+% INPUTS:
+%   n_sims_input      : Number of Monte Carlo simulations (Default: 5000)
+%   cv_reps_input     : Number of replications for the asymptotic CV (Default: 10000)
+%   ar_scaling_option : 1 = Unscaled Legacy (Inflated unconditional variance) - EXACT REPRODUCIBILITY
+%                       2 = Scaled (Fixed unconditional variance equal to sigma^2)
+%   cv_option         : 1 = Asymptotically Simulated (via Compute_CVs)
+%                       2 = Fixed Legacy (8.28 for F*, 3.84 for Full-Sample) - EXACT REPRODUCIBILITY
+%   run_target        : Target exhibit to execute -> 'all' (default), 'fig5', 'tab5', 'fig6'
 %
 % =========================================================================
 
-    clc; % NON usare 'clear', distrugge gli input della funzione
+    clc; % DO NOT use 'clear', it destroys the function inputs
     restoredefaultpath;
     addpath('..\..\m_break'); 
     addpath('..\cvals'); 
     warning('off','all');
 
-    % --- GESTIONE INPUT OPZIONALI E DEFAULT ---
+    % --- OPTIONAL INPUTS AND DEFAULT HANDLING ---
     if nargin < 1 || isempty(n_sims_input), n_sims = 5000; else, n_sims = n_sims_input; end
     if nargin < 2 || isempty(cv_reps_input), cv_reps = 10000; else, cv_reps = cv_reps_input; end
     if nargin < 3 || isempty(ar_scaling_option), ar_scaling_option = 1; end
@@ -36,7 +36,7 @@ function Paper_Results = runSection4_Simul(n_sims_input, cv_reps_input, ar_scali
 
     piLow_param = 0.6; 
 
-    % --- SETUP STRINGHE DESCRITTIVE PER LOG E DIRECTORY ---
+    % --- SETUP DESCRIPTIVE STRINGS FOR LOGS AND DIRECTORIES ---
     if ar_scaling_option == 1
         scaling_str = 'UnscaledAR';
         scaling_desc = 'Legacy Non-Scaled (Inflated unconditional variance)';
@@ -56,7 +56,7 @@ function Paper_Results = runSection4_Simul(n_sims_input, cv_reps_input, ar_scali
     folder_name = sprintf('Paper_Exhibits_Results_%dsims_%s_%s_%s', n_sims, scaling_str, cv_str, upper(run_target));
     if ~exist(folder_name, 'dir'), mkdir(folder_name); end
     
-    % --- CONGELAMENTO TIMESTAMP SINCRONIZZATO ---
+    % --- TIMESTAMPS FOR SYNCHRONIZED LOGGING ---
     timestamp_file = char(datetime('now', 'Format', 'yyyyMMdd_HHmmss'));
     timestamp_disp = char(datetime('now', 'Format', 'yyyy-MM-dd HH:mm:ss'));
 
@@ -81,7 +81,7 @@ function Paper_Results = runSection4_Simul(n_sims_input, cv_reps_input, ar_scali
 
     Paper_Results = struct();
 
-    % --- FASE 0: GESTIONE CRITICAL VALUE TEORICO ---
+    % --- STAGE 0: THEORETICAL CRITICAL VALUE INITIALIZATION ---
     fprintf_both(fid_log, '\n===================================================================\n');
     fprintf_both(fid_log, ' FASE 0: Inizializzazione Critical Value Teorico\n');
     fprintf_both(fid_log, '===================================================================\n');
@@ -96,7 +96,7 @@ function Paper_Results = runSection4_Simul(n_sims_input, cv_reps_input, ar_scali
     fprintf_both(fid_log, '   >> CV Teorico F* Assegnato: %.4f\n\n', cv_teorico);
 
     % =========================================================================
-    % EXHIBIT 1: REPLICA FIGURA 5 (Raw Power)
+    % EXHIBIT 1: REPLICATION OF FIGURE 5 (Raw Power)
     % =========================================================================
     if strcmpi(run_target, 'all') || strcmpi(run_target, 'fig5')
         reset_parallel_pool(fid_log);
@@ -115,7 +115,7 @@ function Paper_Results = runSection4_Simul(n_sims_input, cv_reps_input, ar_scali
     end
 
     % =========================================================================
-    % EXHIBIT 2: REPLICA TABELLA 5 (Size-Adjusted Power, Anomalia Fissa)
+    % EXHIBIT 2: REPLICATION OF TABLE 5 (Size-Adjusted Power, Fixed Anomaly)
     % =========================================================================
     if strcmpi(run_target, 'all') || strcmpi(run_target, 'tab5')
         reset_parallel_pool(fid_log);
@@ -136,7 +136,7 @@ function Paper_Results = runSection4_Simul(n_sims_input, cv_reps_input, ar_scali
     end
 
     % =========================================================================
-    % EXHIBIT 3: REPLICA FIGURA 6 (Size-Adjusted Power, Anomalia Proporzionale)
+    % EXHIBIT 3: REPLICATION OF FIGURE 6 (Size-Adjusted Power, Proportional Anomaly)
     % =========================================================================
     if strcmpi(run_target, 'all') || strcmpi(run_target, 'fig6')
         reset_parallel_pool(fid_log);
@@ -156,15 +156,15 @@ function Paper_Results = runSection4_Simul(n_sims_input, cv_reps_input, ar_scali
         end
     end
 
-    % --- CHIUSURA DEFINITIVA ---
+    % --- TERMINAL SHUTDOWN ---
     reset_parallel_pool(fid_log); 
     fclose(fid_log);
     
-    % Salvataggio del file .MAT datato
+    % Saving dated workspace file (.MAT)
     out_filename_mat = fullfile(folder_name, sprintf('Paper_Exhibits_Suite_%dsims_%s_%s.mat', n_sims, upper(run_target), timestamp_file));
     save(out_filename_mat, 'Paper_Results');
     
-    % Esportazione risultati .TXT datato
+    % Exporting formatted text report (.TXT)
     export_paper_exhibits_to_txt(Paper_Results, n_sims, folder_name, scaling_desc, cv_desc, timestamp_file, timestamp_disp);
     
     fprintf('\nEsecuzione Completata con Successo (Target: %s). Output salvati in: %s\\\n', upper(run_target), folder_name);
@@ -189,7 +189,7 @@ function Results = Run_MC_Scenario(dgp_type, pi0, arCoef, size_adjusted_flag, n_
     
     cv_teorico_FullSample = 3.84; 
 
-    % --- REPLICAZIONE ESATTA DEI SEED (arK MAPPING) ---
+    % --- EXACT REPLICATION OF SEEDS (arK MAPPING) ---
     if strcmp(dgp_type, 'Sec4')
         master_seed = 20250715; 
         T = 400; 
@@ -206,14 +206,14 @@ function Results = Run_MC_Scenario(dgp_type, pi0, arCoef, size_adjusted_flag, n_
 
     Hac_option = (arCoef ~= 0); 
 
-    % Configurazione per il nuovo Core Engine Esterno
+    % Settings configuration for the Core Engine API
     core_options = struct();
     core_options.piLow = piLow;
     core_options.Hac_option = Hac_option;
     core_options.m_breaks = 5;
     core_options.use_min_truncation = ~strcmp(dgp_type, 'Sec4'); % Sec4=false, M1/M2=true
 
-    % --- STAGE 1: CALCOLO VALORI CRITICI (d = 0) ---
+    % --- STAGE 1: CRITICAL VALUE EVALUATION UNDER H0 (d = 0) ---
     FstatVec_piLATE_size = zeros(n_sims, 1);
     FstatVec_FullSample_size = zeros(n_sims, 1);
 
@@ -222,7 +222,7 @@ function Results = Run_MC_Scenario(dgp_type, pi0, arCoef, size_adjusted_flag, n_
         
         [D, Z, ~, ~, X] = generate_Universal_DGP(T, pi0, 0, arCoef, dgp_type, 1, emp_data, ar_scaling_option);
         
-        % Chiamata all'API Core Engine
+        % Core Engine Execution
         api_results = piLATE_Ftest(D, Z, X, core_options);
         
         FstatVec_piLATE_size(i_sims) = api_results.F_star;
@@ -237,7 +237,7 @@ function Results = Run_MC_Scenario(dgp_type, pi0, arCoef, size_adjusted_flag, n_
     Results.raw_size_piLATE = mean(FstatVec_piLATE_size > cv_teorico_piLATE);
     Results.raw_size_FullSample = mean(FstatVec_FullSample_size > cv_teorico_FullSample);
 
-    % --- STAGE 2: CALCOLO POTENZA ---
+    % --- STAGE 2: POWER CURVE COMPUTATION ---
     if size_adjusted_flag
         cv_final_piLATE = Results.cv_piLATE;
         cv_final_FullSample = Results.cv_FullSample;
@@ -259,7 +259,7 @@ function Results = Run_MC_Scenario(dgp_type, pi0, arCoef, size_adjusted_flag, n_
             
             [D, Z, ~, ~, X] = generate_Universal_DGP(T, pi0, theta_val_power, arCoef, dgp_type, 0, emp_data, ar_scaling_option);
             
-            % Chiamata all'API Core Engine
+            % Core Engine Execution
             api_results = piLATE_Ftest(D, Z, X, core_options);
             
             temp_pL(thetaK) = api_results.F_star;
@@ -395,10 +395,9 @@ function export_paper_exhibits_to_txt(All_Results, n_sims, folder_name, scaling_
     fprintf(fid, 'AR Variance Logic  : %s\n', scaling_desc);
     fprintf(fid, 'Critical Val Logic : %s\n', cv_desc);
     fprintf(fid, '====================================================================\n\n');
-
     fields = fieldnames(All_Results);
     
-    % --- TABELLA 5 ---
+    % --- TABLE 5 ---
     tab5_fields = fields(startsWith(fields, 'Tab5_'));
     if ~isempty(tab5_fields)
         fprintf(fid, '====================================================================\n');
@@ -423,7 +422,7 @@ function export_paper_exhibits_to_txt(All_Results, n_sims, folder_name, scaling_
         end
     end
     
-    % --- FIGURA 6 ---
+    % --- FIGURE 6 ---
     fig6_fields = fields(startsWith(fields, 'Fig6_'));
     if ~isempty(fig6_fields)
         fprintf(fid, '\n====================================================================\n');
@@ -442,7 +441,7 @@ function export_paper_exhibits_to_txt(All_Results, n_sims, folder_name, scaling_
         end
     end
 
-    % --- FIGURA 5 ---
+    % --- FIGURE 5 ---
     fig5_fields = fields(startsWith(fields, 'Fig5_'));
     if ~isempty(fig5_fields)
         fprintf(fid, '====================================================================\n');
