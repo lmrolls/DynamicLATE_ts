@@ -9,6 +9,7 @@ function [stats_AMS, stats_ST, cv_LR] = robust_LATE_inference(Y, D, Z, X, beta_H
     end
     
     if ~isfield(params, 'Hac_option'), params.Hac_option = true; end
+    if ~isfield(params, 'alpha_level'), params.alpha_level = 0.05; end
     
     if nargin < 5 || isempty(beta_H0), beta_H0 = 0.0; end
     if nargin < 4, X = []; end
@@ -40,13 +41,13 @@ function [stats_AMS, stats_ST, cv_LR] = robust_LATE_inference(Y, D, Z, X, beta_H
     stats_AMS.LR = 0.5 * (res_AMS.M1 - res_AMS.M2 + sqrt(max(0, (res_AMS.M1 - res_AMS.M2)^2 + 4 * res_AMS.M12^2)));
     stats_AMS.M2 = res_AMS.M2;
     
-    cv_LR.cv_AR = chi2inv(0.95, q);
-    cv_LR.cv_LM = chi2inv(0.95, 1);
+    cv_LR.cv_AR = chi2inv(1 - params.alpha_level, q);
+    cv_LR.cv_LM = chi2inv(1 - params.alpha_level, 1);
     cv_LR.pval_AR_AMS = 1 - chi2cdf(stats_AMS.AR * q, q);
     cv_LR.pval_LM_AMS = 1 - chi2cdf(stats_AMS.LM, 1);
 
     % RNG logic to preserve 12/06 paper reproducibility (legacy_math fixed to true)
-    [cv_LR.cv_AMS, cv_LR.pval_AMS] = LR_cv_legacy_exact(stats_AMS.M2, q, 0.05, user_seed + 1, stats_AMS.LR);
+    [cv_LR.cv_AMS, cv_LR.pval_AMS] = LR_cv_legacy_exact(stats_AMS.M2, q, params.alpha_level, user_seed + 1, stats_AMS.LR);
 
     % --- 4. COMPUTATION OF ST STATISTICS ---
     if params.max_breaks > 0 && exist('Procedure_piL_Full_Sample', 'file') == 2
@@ -114,7 +115,7 @@ function [stats_AMS, stats_ST, cv_LR] = robust_LATE_inference(Y, D, Z, X, beta_H
                 cv_LR.pval_AR_ST = 1 - chi2cdf(stats_ST.AR * q, q);
                 cv_LR.pval_LM_ST = 1 - chi2cdf(stats_ST.LM, 1);
                 
-                [cv_LR.cv_ST, cv_LR.pval_ST] = LR_cv_legacy_exact(stats_ST.M2, q, 0.05, user_seed + 2, stats_ST.LR);
+                [cv_LR.cv_ST, cv_LR.pval_ST] = LR_cv_legacy_exact(stats_ST.M2, q, params.alpha_level, user_seed + 2, stats_ST.LR);
             end
         end
     end
