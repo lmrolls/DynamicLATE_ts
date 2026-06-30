@@ -139,7 +139,8 @@ function Results_Table = Dynamic_LATE_Analysis(Y, D, Z, X, options)
         fprintf('\n>>> PHASE 3: IDENTIFICATION-ROBUST INFERENCE (H0: beta = %.2f)\n', options.beta_H0);
         params_core = struct('q', q, 'max_breaks', options.m_breaks, 'eps1', 0.05, ...
                              'vector_piL', (pi_val:0.1:1), 'step_pi', 0.05, ...
-                             'Hac_option', options.Hac_option);
+                             'Hac_option', options.Hac_option, ...
+                             'alpha_level', options.alpha_level); 
                              
         [~, stats_ST, cv_LR_struct] = robust_LATE_inference(Y, D, Z, X, options.beta_H0, params_core, []);
         
