@@ -80,7 +80,7 @@ function Results_Table = Dynamic_LATE_Analysis(Y, D, Z, X, options)
         if F_Res.F_star > cv_F
             rej_str = 'Rej';
         else
-            rej_str = 'Acc';
+            rej_str = 'Non Rej';
         end
         
         row_F_stat{i} = sprintf('%.4f', F_Res.F_star);
