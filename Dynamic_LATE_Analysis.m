@@ -63,10 +63,18 @@ function Results_Table = Dynamic_LATE_Analysis(Y, D, Z, X, options)
     %% CORE LOOP: SEQUENTIAL EVALUATION
     for i = 1:num_grid
         pi_val = grid_piLow(i);
-        row_pi{i} = sprintf('pi_L = %.2f', pi_val);
+        
+        % Check for full-sample label
+        if pi_val == 1
+            row_pi{i} = sprintf('pi_L = %.2f (full-sample)', pi_val);
+            banner_title = sprintf(' ANALYSIS FOR pi_L = %.2f (full-sample)\n', pi_val);
+        else
+            row_pi{i} = sprintf('pi_L = %.2f', pi_val);
+            banner_title = sprintf(' ANALYSIS FOR pi_L = %.2f\n', pi_val);
+        end
         
         fprintf('\n===================================================================\n');
-        fprintf(' ANALYSIS FOR pi_L = %.2f\n', pi_val);
+        fprintf(banner_title);
         fprintf('===================================================================\n');
         
         % =================================================================
