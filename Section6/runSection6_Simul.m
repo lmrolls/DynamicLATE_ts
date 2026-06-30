@@ -48,16 +48,15 @@ function Paper_Results = runSection6_Simul(n_sims_input, run_target)
     fprintf_both(fid_log, ' Execution Target: %s\n', upper(run_target));
     fprintf_both(fid_log, ' Date/Time       : %s\n', timestamp_disp);
     fprintf_both(fid_log, ' Iterations      : %d\n', n_sims);
-    fprintf_both(fid_log, ' Focus           : AMS and ST Tests (Exact Legacy Seeds Applied)\n');
+    fprintf_both(fid_log, ' Focus           : AMS and ST Tests\n');
     fprintf_both(fid_log, ' Engine          : robust_LATE_inference (External Function)\n');
     fprintf_both(fid_log, '===================================================================\n\n');
 
     Paper_Results = struct();
     test_names = {'AR_AMS', 'LM_AMS', 'LR_AMS', 'AR_ST', 'LM_ST', 'LR_ST'};
-    cv_chi2_1 = chi2inv(0.95, 1);
     
-    % Core logic parameters (legacy_math = true strictly forces the 12/06 internal operations)
-    params_core = struct('q', 1, 'max_breaks', 5, 'eps1', 0.05, 'vector_piL', (0.6:0.1:1), 'step_pi', 0.05, 'Hac_option', true, 'legacy_math', true);
+    % Core logic parameters (legacy math framework structurally embedded)
+    params_core = struct('q', 1, 'max_breaks', 5, 'eps1', 0.05, 'vector_piL', (0.6:0.1:1), 'step_pi', 0.05, 'Hac_option', true);
 
     % =========================================================================
     % ROUTINE: TABLE 9 (Empirical Size, i.i.d., T=400)
@@ -87,8 +86,8 @@ function Paper_Results = runSection6_Simul(n_sims_input, run_target)
                         [stats_AMS, stats_ST, cv_LR] = robust_LATE_inference(Y_s, D_s, Z_raw, X_raw, beta_H0, params_core, rng_seed);
                         
                         rej_matrix(i_sims, :) = [ ...
-                            stats_AMS.AR > cv_chi2_1, stats_AMS.LM > cv_chi2_1, stats_AMS.LR > cv_LR.cv_AMS, ...
-                            stats_ST.AR  > cv_chi2_1, stats_ST.LM  > cv_chi2_1, stats_ST.LR  > cv_LR.cv_ST ...
+                            (stats_AMS.AR * params_core.q) > cv_LR.cv_AR, stats_AMS.LM > cv_LR.cv_LM, stats_AMS.LR > cv_LR.cv_AMS, ...
+                            (stats_ST.AR * params_core.q)  > cv_LR.cv_AR, stats_ST.LM  > cv_LR.cv_LM, stats_ST.LR  > cv_LR.cv_ST ...
                         ];
                     end
                     emp_size = mean(rej_matrix, 1, 'omitnan');
@@ -129,8 +128,8 @@ function Paper_Results = runSection6_Simul(n_sims_input, run_target)
                         [stats_AMS, stats_ST, cv_LR] = robust_LATE_inference(Y_s, D_s, Z_raw, X_raw, beta_H0, params_core, rng_seed);
                         
                         rej_matrix(i_sims, :) = [ ...
-                            stats_AMS.AR > cv_chi2_1, stats_AMS.LM > cv_chi2_1, stats_AMS.LR > cv_LR.cv_AMS, ...
-                            stats_ST.AR  > cv_chi2_1, stats_ST.LM  > cv_chi2_1, stats_ST.LR  > cv_LR.cv_ST ...
+                            (stats_AMS.AR * params_core.q) > cv_LR.cv_AR, stats_AMS.LM > cv_LR.cv_LM, stats_AMS.LR > cv_LR.cv_AMS, ...
+                            (stats_ST.AR * params_core.q)  > cv_LR.cv_AR, stats_ST.LM  > cv_LR.cv_LM, stats_ST.LR  > cv_LR.cv_ST ...
                         ];
                     end
                     emp_size = mean(rej_matrix, 1, 'omitnan');
