@@ -135,17 +135,14 @@ function Results_Table = Dynamic_LATE_Analysis(Y, D, Z, X, options)
                              
         [~, stats_ST, cv_LR_struct] = robust_LATE_inference(Y, D, Z, X, options.beta_H0, params_core, []);
         
-        cv_q = chi2inv(1 - options.alpha_level, q);
-        cv_1 = chi2inv(1 - options.alpha_level, 1);
-        
         if isfield(stats_ST, 'LM') && ~isnan(stats_ST.LM)
             AR_v = max(0, real(stats_ST.AR)); 
-            p_AR = 1 - chi2cdf(AR_v * q, q);
-            cv_AR_val = cv_q / q;
+            p_AR = cv_LR_struct.pval_AR_ST;
+            cv_AR_val = cv_LR_struct.cv_AR / q;
             
             LM_v = max(0, real(stats_ST.LM)); 
-            p_LM = 1 - chi2cdf(LM_v, 1);
-            cv_LM_val = cv_1;
+            p_LM = cv_LR_struct.pval_LM_ST;
+            cv_LM_val = cv_LR_struct.cv_LM;
             
             LR_v = max(0, real(stats_ST.LR)); 
             
@@ -153,7 +150,7 @@ function Results_Table = Dynamic_LATE_Analysis(Y, D, Z, X, options)
                 cv_LR_val = cv_LR_struct.cv_ST;
                 p_LR = cv_LR_struct.pval_ST; 
             else
-                cv_LR_val = cv_1;
+                cv_LR_val = cv_LR_struct.cv_LM;
                 p_LR = NaN;
             end
             
