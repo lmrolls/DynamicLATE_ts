@@ -76,7 +76,7 @@ Contains scripts to reproduce the Monte Carlo simulations and critical values of
 * `runSection4_Simul.m`: Master script to execute the simulation suite for Section 4 exhibits (e.g., Table 4, Table 5, Figure 5, Figure 6). Incorporates options for exact legacy replication (fixed random seeds, specific variance scaling).
 * `piLATE_Ftest.m`: Core function computing the supremum $\pi$-LATE $F_T^*$ statistic across possible structural breaks.
 
-** Example of usage: 
+** Example of usage:**
 ```matlab 
 run runSection4_Simul.m
 ```
@@ -90,8 +90,17 @@ Contains scripts to replicate the estimation properties detailed in Section 5.
 * `est_2sls_pilate.m`: Implementation of the 2SLS estimator for the most strongly-identified subsample $\hat{S}_T$, featuring options for White (HC1) or Newey-West (HAC) standard errors.
 * `est_fgls_pilate.m`: Implementation of the FGLS estimator for seemingly unrelated regression (SUR) representations, relying on multivariate break detection algorithms.
 
+** Example of usage:**
+```matlab 
+run runSection5_Simul.m
+```
+
 ### `Section6`: Robust Inference
 Contains the codebase for computing size and size-adjusted power of identification-robust tests (Section 6).
 * `runSection6_Simul.m`: Master script executing the computational suite for Tables 9-10 and Figures 7-8.
 * `robust_LATE_inference.m`: Unified engine generating the Anderson-Rubin, Lagrange Multiplier, and Conditional Likelihood Ratio statistics evaluated at the estimated partition $\hat{S}_T$.
 
+** Example of usage:**
+```matlab 
+run runSection6_Simul.m
+```
