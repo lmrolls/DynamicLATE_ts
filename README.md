@@ -75,6 +75,10 @@ Contains scripts to reproduce the Monte Carlo simulations and critical values of
 #### Folder 1: `ftest`
 * `runSection4_Simul.m`: Master script to execute the simulation suite for Section 4 exhibits (e.g., Table 4, Table 5, Figure 5, Figure 6). Incorporates options for exact legacy replication (fixed random seeds, specific variance scaling).
 * `piLATE_Ftest.m`: Core function computing the supremum $\pi$-LATE $F_T^*$ statistic across possible structural breaks.
+** Example of usage: 
+```matlab 
+run runSection4_Simul.m
+`
 
 #### Folder 2: `cvals`
 * `Compute_CVs.m` / `RunMc_CVs_Fstat.m`: Subroutines located in `cvals/` to simulate the non-standard asymptotic distributions required for the critical values.
