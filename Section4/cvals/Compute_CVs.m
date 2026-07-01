@@ -102,34 +102,28 @@ function [CV_Table] = Compute_CVs(q_value, piLow, T, totreps, qw, set_seed)
                     for pi_s_idx = 1:index_pis
                         current_pi = num_pis(pi_s_idx);
 
-                        % Chiamata alla funzione helper (INCLUSA IN FONDO ALLO SCRIPT)
+                       
                         S_m = S_Dates_Norm(D, datevec, T, current_pi, m);
 
                         if isempty(S_m)
                             error('Error: S_m is empty');
                         end
 
-                        % --- FIX 1: ORDINAMENTO CORRETTO ---
                         S_m = sortrows(S_m, 1); 
 
                         if size(S_m,1) > 1
-                            [S_m] = merge_Dates(S_m); % Helper INCLUSA
+                            [S_m] = merge_Dates(S_m); 
                         end
 
-                        % --- FIX 2: CALCOLO CORRETTO DELLA STATISTICA ---
-                        out = 0;
+                        vec_sum = zeros(1, qw);
                         for i = 1:size(S_m,1)
                             if S_m(i,1) == 1
-                                % Da 1 a End: D(End) - D(0) dove D(0)=0
-                                out = out + norm(D(S_m(i,2),:))^2;
+                                vec_sum = vec_sum + D(S_m(i,2),:);
                             else
-                                % Da Start a End: D(End) - D(Start-1)
-                                % Questo include correttamente l'osservazione 'Start'
-                                out = out + norm(D(S_m(i,2),:) - D(S_m(i,1) - 1,:))^2;
+                                vec_sum = vec_sum + (D(S_m(i,2),:) - D(S_m(i,1) - 1,:));
                             end
                         end
-
-                        out = out / (qw * current_pi);
+                        out = norm(vec_sum)^2 / (qw * current_pi);
                         F_S(pi_s_idx, m) = out;
                     end
                 end
