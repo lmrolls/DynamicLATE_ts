@@ -78,7 +78,7 @@ Contains scripts to reproduce the Monte Carlo simulations and critical values of
 ** Example of usage: 
 ```matlab 
 run runSection4_Simul.m
-`
+```
 
 #### Folder 2: `cvals`
 * `Compute_CVs.m` / `RunMc_CVs_Fstat.m`: Subroutines located in `cvals/` to simulate the non-standard asymptotic distributions required for the critical values.
