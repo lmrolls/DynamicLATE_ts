@@ -294,47 +294,15 @@ function [S_m]=S_Dates_Norm(y, datevec, T, pi, m)
 end
 
 function [S_m_New] = merge_Dates(S_m)
-    S_m_New = [];
-    i = 1;
-    while i <= size(S_m,1)
-        if S_m(i,1) == 1
-            if S_m(i,2) ~= S_m(i+1,1) && S_m(i,2) ~= S_m(i+1,1) - 1
-                S_m_New = [S_m_New; S_m(i,1), S_m(i,2)];
-                i = i + 1;
-            else
-                j = i;
-                kk = 0;
-                while (S_m(j,2) == S_m(j+1,1) || S_m(j,2) == S_m(j+1,1) - 1) && kk == 0 
-                    j = j + 1;
-                    if j == size(S_m,1)
-                        kk = j;
-                        j = 1;  
-                    end
-                end
-                if kk ~= 0
-                    j = kk;
-                end
-                S_m_New = [S_m_New; S_m(i,1), S_m(j,2)];
-                i = j + 1;
-            end
+    n = size(S_m,1);
+    S_m_New = S_m(1,:);
+    for i = 2:n
+        % Adiacenza vera (end+1==start) O overlap-al-bordo (end==start):
+        % in entrambi i casi il telescoping richiede la fusione.
+        if S_m(i,1) <= S_m_New(end,2) + 1
+            S_m_New(end,2) = max(S_m_New(end,2), S_m(i,2));
         else
-            if i == size(S_m,1)
-                S_m_New = [S_m_New; S_m(i,1), S_m(i,2)];
-                i = i + 1;
-            else
-                if S_m(i,2) ~= S_m(i+1,1) && S_m(i,2) ~= S_m(i+1,1) - 1
-                    S_m_New = [S_m_New; S_m(i,1), S_m(i,2)];
-                    i = i + 1;
-                else
-                    j = i;
-                    kk = 0;
-                    while j < size(S_m,1) && (S_m(j,2) == S_m(j+1,1) || S_m(j,2) == S_m(j+1,1) - 1) && kk == 0
-                        j = j + 1;
-                    end
-                    S_m_New = [S_m_New; S_m(i,1), S_m(j,2)];
-                    i = j + 1;
-                end
-            end
+            S_m_New = [S_m_New; S_m(i,:)];
         end
     end
 end
