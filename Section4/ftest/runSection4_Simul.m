@@ -2,7 +2,7 @@ function Paper_Results = runSection4_Simul(n_sims_input, cv_reps_input, cv_optio
 % RUNSECTION4_SIMUL Executes the simulation suite for exhibit replication (Section 4).
 %
 % SYNTAX:
-%   res = runSection4_Simul()                        % Default: All (5000 sims, Fixed CV)
+%   res = runSection4_Simul()                         % Default: All (5000 sims, Fixed CV)
 %   res = runSection4_Simul(5000, 10000, 2, 'tab5')   % Runs EXCLUSIVELY Table 5
 %
 % INPUTS:

@@ -2,7 +2,8 @@ function Results = piLATE_Ftest(D, Z, X, options)
 % piLATE_Ftest Executes the pi-LATE (F*) test for structural identification.
 %
 % SYNTAX:
-%   Results = piLATE_Ftest(D, Z, [], options)  % Without exogenous covariates
+%   Results = piLATE_Ftest(D, Z, [], options)  % Without exogenous
+%   covariates
 %   Results = piLATE_Ftest(D, Z, X, options)   % With exogenous covariates
 %
 % INPUTS:
