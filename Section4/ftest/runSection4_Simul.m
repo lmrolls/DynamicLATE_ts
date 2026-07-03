@@ -9,7 +9,7 @@ function Paper_Results = runSection4_Simul(n_sims_input, cv_reps_input, cv_optio
 %   n_sims_input  : Number of Monte Carlo simulations (Default: 5000)
 %   cv_reps_input : Number of replications for the asymptotic CV (Default: 10000)
 %   cv_option     : 1 = Asymptotically Simulated (via Compute_CVs)
-%                   2 = Fixed Legacy (8.28 for F*, 3.84 for Full-Sample) - EXACT REPRODUCIBILITY
+%                   2 = Fixed Legacy (12.742 for F*, 3.84 for Full-Sample) - EXACT REPRODUCIBILITY
 %   run_target    : Target exhibit to execute -> 'all' (default), 'fig5', 'tab5', 'fig6'
 %
 % =========================================================================
@@ -39,7 +39,7 @@ function Paper_Results = runSection4_Simul(n_sims_input, cv_reps_input, cv_optio
         cv_desc = 'Simulated Asymptotic CV (via Compute_CVs)';
     else
         cv_str = 'FixedCV';
-        cv_desc = 'Fixed Legacy CV (8.28 per pi-LATE F*, 3.84 per Full-Sample F)';
+        cv_desc = 'Fixed Legacy CV (12.742 per pi-LATE F*, 3.84 per Full-Sample F)';
     end
 
     folder_name = sprintf('Paper_Exhibits_Results_%dsims_%s_%s', n_sims, cv_str, upper(run_target));
@@ -79,7 +79,7 @@ function Paper_Results = runSection4_Simul(n_sims_input, cv_reps_input, cv_optio
         cv_teorico = cv_table.CV_95;
     else
         fprintf_both(fid_log, '-> Using Fixed Legacy CV...\n');
-        cv_teorico = 8.28;
+        cv_teorico = 12.742;
     end
     fprintf_both(fid_log, '   >> Assigned Theoretical CV F*: %.4f\n\n', cv_teorico);
 
