@@ -12,7 +12,6 @@ function Results = piLATE_Ftest(D, Z, X, options)
 %   options : Optional struct with algorithm parameters:
 %             .piLow              (Default: 0.6)
 %             .Hac_option         (Default: false)
-%             .use_min_truncation (Default: false) - Uses min(HAC, White) and asymptotic df
 %             .m_breaks           (Default: 5)
 %
 % OUTPUT:
@@ -30,7 +29,6 @@ function Results = piLATE_Ftest(D, Z, X, options)
     if nargin < 4 || isempty(options), options = struct(); end
     if ~isfield(options, 'piLow'),              options.piLow = 0.6; end
     if ~isfield(options, 'Hac_option'),         options.Hac_option = false; end
-    if ~isfield(options, 'use_min_truncation'), options.use_min_truncation = false; end
     if ~isfield(options, 'm_breaks'),           options.m_breaks = 5; end
     
     % Fixed Bai-Perron parameters (paper standard)
@@ -66,12 +64,9 @@ function Results = piLATE_Ftest(D, Z, X, options)
                 % Compression
                 [D_tilde, Z_tilde, T_eff] = apply_Ct_operator(D, Z, X, S_index);
                 
-                % Truncation Evaluation
-                if options.use_min_truncation
-                    F_ST(pi_idx, m) = F_ST_Stat_2_Legacy(D_tilde, Z_tilde, T_eff, q, p, options.Hac_option);
-                else
-                    F_ST(pi_idx, m) = F_ST_Stat_Legacy(D_tilde, Z_tilde, T_eff, q, p, options.Hac_option);
-                end
+               
+                F_ST(pi_idx, m) = F_ST_Stat_Legacy(D_tilde, Z_tilde, T_eff, q, p, options.Hac_option);
+                
             end
         end
         
@@ -150,15 +145,4 @@ function [F_ST_Stat] = F_ST_Stat_Legacy(D, Z, T_val, q, p, hac)
     if T_val <= (p + q), F_ST_Stat = 0; return; end
     J_hat_ST = OLS_Robust_VarXe(D, Z, 0, hac, 0); 
     F_ST_Stat = (D'*Z) * (J_hat_ST)^-1 * (Z'*D) / (q*(T_val - p - q));
-end
-
-function [F_ST_Stat] = F_ST_Stat_2_Legacy(D, Z, T_val, q, p, hac)
-    % Conservative truncated F-stat with asymptotic divisor
-    if nargin < 6; hac = 1; end
-    if T_val <= (p + q), F_ST_Stat = 0; return; end
-    J_hat_ST = OLS_Robust_VarXe(D, Z, 0, hac, 0); 
-    F_ST_1 = (D'*Z) * (J_hat_ST)^-1 * (Z'*D) / (q*T_val);
-    J_het = OLS_Robust_VarXe(D, Z, 0, 0, 0); 
-    F_ST_2 = (D'*Z) * (J_het)^-1 * (Z'*D) / (q*T_val);
-    F_ST_Stat = min(F_ST_1, F_ST_2);
 end
