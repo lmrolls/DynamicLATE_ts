@@ -181,7 +181,7 @@ function Results = Run_MC_Scenario(dgp_type, pi0, arCoef, size_adjusted_flag, n_
     if strcmp(dgp_type, 'Sec4')
         master_seed = 20250715; 
         T = 400; 
-        thetaVecPower = 0:0.2:0.8;
+        thetaVecPower = 0:0.05:0.8;
         arVec_ref = [0, 0.25, 0.50, 0.75];
         arK = find(arVec_ref == arCoef);
     else
