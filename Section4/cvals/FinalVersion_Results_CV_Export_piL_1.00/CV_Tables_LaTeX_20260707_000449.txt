@@ -1,0 +1,30 @@
+% 10% Critical Values
+\begin{table}[h]
+\centering
+\begin{tabular}{l|cccccc}
+$\pi_L \setminus q$ & 1 & 2 & 3 & 4 & 5 & 10 \\ \hline
+1.00 &  2.68 & 2.32 & 2.07 & 1.94 & 1.85 & 1.61  \\
+\end{tabular}
+\caption{10% Critical Values}
+\end{table}
+
+% 5% Critical Values
+\begin{table}[h]
+\centering
+\begin{tabular}{l|cccccc}
+$\pi_L \setminus q$ & 1 & 2 & 3 & 4 & 5 & 10 \\ \hline
+1.00 &  3.85 & 3.05 & 2.58 & 2.37 & 2.23 & 1.84  \\
+\end{tabular}
+\caption{5% Critical Values}
+\end{table}
+
+% 1% Critical Values
+\begin{table}[h]
+\centering
+\begin{tabular}{l|cccccc}
+$\pi_L \setminus q$ & 1 & 2 & 3 & 4 & 5 & 10 \\ \hline
+1.00 &  6.46 & 4.53 & 3.72 & 3.30 & 3.00 & 2.35  \\
+\end{tabular}
+\caption{1% Critical Values}
+\end{table}
+
