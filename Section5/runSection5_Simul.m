@@ -1,17 +1,30 @@
-function Paper_Results = runSection5_Simul(n_sims_input, run_target)
+function Paper_Results = runSection5_Simul(n_sims_input, run_target, include_competitors)
 % RUNSECTION5_SIMUL Executes the Monte Carlo suite for Section 5 exhibits.
 %
 % SYNTAX:
 %   res = runSection5_Simul()                   % Default: All tables (5000 sims)
 %   res = runSection5_Simul(5000, 'tab67')      % Runs EXCLUSIVELY Tables 6 and 7
 %   res = runSection5_Simul(5000, 'tab8')       % Runs EXCLUSIVELY Table 8
+%   res = runSection5_Simul(5000, 'all', false) % pi-LATE estimators only (no competitor)
 %
 % INPUTS:
 %   n_sims_input : Number of Monte Carlo replications (Default: 5000)
 %   run_target   : Target exhibit -> 'all' (default), 'tab67', 'tab8'
+%   include_competitors : (Optional) true (default) also computes the competitor
+%                  \hat{beta}_{FS} (full-sample IV, Tables 7-8) from competitors_FS\;
+%                  false reproduces exactly the previous outputs (same folder and
+%                  file names, same fields, same tables).
+%                  With true the output folder and file names carry the token _FS.
 %
 % OUTPUTS:
 %   Paper_Results: Struct containing all Bias and MSE metrics for the grid.
+%
+% ESTIMATORS:
+%   \hat{S}_{T,OLS}, \hat{beta}(\hat{S}_{T,OLS})   -> est_2sls_pilate.m  (standalone)
+%   \hat{S}_{T,FGLS}, \hat{beta}(\hat{S}_{T,FGLS}) -> est_fgls_pilate.m  (standalone)
+%   \hat{beta}_{FS} (full-sample IV, rival benchmark of Tables 7-8)
+%                                                 -> competitors_FS\est_iv_fullsample.m
+%                                                    (simulation-only helper)
 % =========================================================================
 
     clc;
@@ -21,6 +34,8 @@ function Paper_Results = runSection5_Simul(n_sims_input, run_target)
     % --- DEFAULT INPUT HANDLING ---
     if nargin < 1 || isempty(n_sims_input), n_sims = 5000; else, n_sims = n_sims_input; end
     if nargin < 2 || isempty(run_target), run_target = 'all'; end
+    if nargin < 3 || isempty(include_competitors), include_competitors = true; end
+    if include_competitors, comp_tag = '_FS'; else, comp_tag = ''; end
     
     valid_targets = {'all', 'tab67', 'tab8'};
     if ~ismember(lower(run_target), valid_targets)
@@ -32,13 +47,13 @@ function Paper_Results = runSection5_Simul(n_sims_input, run_target)
     run_tab8  = strcmpi(run_target, 'all') || strcmpi(run_target, 'tab8');
 
     % --- UNDATED DIRECTORY & DATED FILES SETUP ---
-    folder_name = sprintf('Paper_Exhibits_Results_%dsims_SEC5_%s', n_sims, upper(run_target));
+    folder_name = sprintf('Paper_Exhibits_Results_%dsims_SEC5_%s%s', n_sims, upper(run_target), comp_tag);
     if ~exist(folder_name, 'dir'), mkdir(folder_name); end
 
     timestamp_file = char(datetime('now', 'Format', 'yyyyMMdd_HHmmss'));
     timestamp_disp = char(datetime('now', 'Format', 'yyyy-MM-dd HH:mm:ss'));
 
-    log_filename = fullfile(folder_name, sprintf('Detailed_Logs_%dsims_SEC5_%s_%s.txt', n_sims, upper(run_target), timestamp_file));
+    log_filename = fullfile(folder_name, sprintf('Detailed_Logs_%dsims_SEC5_%s%s_%s.txt', n_sims, upper(run_target), comp_tag, timestamp_file));
     fid_log = fopen(log_filename, 'w');
     if fid_log == -1, error('Unable to create the log file.'); end
 
@@ -47,6 +62,9 @@ function Paper_Results = runSection5_Simul(n_sims_input, run_target)
     fprintf_both(fid_log, ' Execution Target: %s\n', upper(run_target));
     fprintf_both(fid_log, ' Date/Time       : %s\n', timestamp_disp);
     fprintf_both(fid_log, ' Iterations      : %d\n', n_sims);
+    if include_competitors
+        fprintf_both(fid_log, ' Competitors     : full-sample IV \\hat{beta}_{FS} (competitors_FS\\est_iv_fullsample.m)\n');
+    end
     fprintf_both(fid_log, '===================================================================\n\n');
 
     Paper_Results = struct();
@@ -74,7 +92,7 @@ function Paper_Results = runSection5_Simul(n_sims_input, run_target)
                     run_label = sprintf('Tab67_rho%02d_pi%02d_eu%02d', round(rho*100), round(pi0*100), round(rho_eu*100));
                     fprintf_both(fid_log, '\n--- Starting Iteration: %s [rho=%.2f, pi0=%.1f, rho_eu=%.1f] ---\n', run_label, rho, pi0, rho_eu);
                     
-                    res = Run_Sec5_Scenario('tab67', rho, pi0, rho_eu, T, n_sims, fid_log);
+                    res = Run_Sec5_Scenario('tab67', rho, pi0, rho_eu, T, n_sims, fid_log, include_competitors);
                     Paper_Results.(run_label) = res;
                 end
             end
@@ -107,7 +125,7 @@ function Paper_Results = runSection5_Simul(n_sims_input, run_target)
                 run_label = sprintf('Tab8_%s_rho%02d', target_str, round(rho*100));
                 fprintf_both(fid_log, '\n--- Starting Iteration: %s [DGP=%s, rho=%.2f] ---\n', run_label, dgp_type, rho);
                 
-                res = Run_Sec5_Scenario(dgp_type, rho, pi0, rho_eu, T, n_sims, fid_log);
+                res = Run_Sec5_Scenario(dgp_type, rho, pi0, rho_eu, T, n_sims, fid_log, include_competitors);
                 Paper_Results.(run_label) = res;
             end
         end
@@ -118,11 +136,11 @@ function Paper_Results = runSection5_Simul(n_sims_input, run_target)
     fclose(fid_log);
     
     % Save .MAT workspace
-    out_filename_mat = fullfile(folder_name, sprintf('Paper_Exhibits_Suite_SEC5_%dsims_%s_%s.mat', n_sims, upper(run_target), timestamp_file));
+    out_filename_mat = fullfile(folder_name, sprintf('Paper_Exhibits_Suite_SEC5_%dsims_%s%s_%s.mat', n_sims, upper(run_target), comp_tag, timestamp_file));
     save(out_filename_mat, 'Paper_Results');
     
     % Export formatted LaTeX-style TXT table
-    export_paper_exhibits_sec5_to_txt(Paper_Results, n_sims, folder_name, run_target, timestamp_file, timestamp_disp);
+    export_paper_exhibits_sec5_to_txt(Paper_Results, n_sims, folder_name, run_target, timestamp_file, timestamp_disp, include_competitors);
     
     fprintf('\nExecution Completed Successfully (Target: %s). Outputs saved in: %s\n', upper(run_target), folder_name);
 end
@@ -152,10 +170,10 @@ function fprintf_both(fid, fmt, varargin)
 end
 
 %% ========================================================================
-%  CORE SIMULATION ENGINE (Encapsulating 3-parfor logic)
+%  CORE SIMULATION ENGINE (Encapsulating 4-parfor logic)
 % =========================================================================
 
-function res = Run_Sec5_Scenario(dgp_type, rho, pi0, rho_eu, T, numMCreps, fid)
+function res = Run_Sec5_Scenario(dgp_type, rho, pi0, rho_eu, T, numMCreps, fid, include_competitors)
     
     % Fixed Parameters (Verbatim from legacy script)
     gamma1 = 1; gamma2 = 1; X_active = 1; fixed_m = 2; burn_in = 100;
@@ -174,8 +192,9 @@ function res = Run_Sec5_Scenario(dgp_type, rho, pi0, rho_eu, T, numMCreps, fid)
     num_d = length(d_grid);
     Bias_OLS = zeros(1, num_d); MSE_OLS = zeros(1, num_d);
     Bias_FGLS = zeros(1, num_d); MSE_FGLS = zeros(1, num_d);
+    Bias_FS = zeros(1, num_d); MSE_FS = zeros(1, num_d);
     MSE_S_OLS = zeros(1, num_d); MSE_S_FGLS = zeros(1, num_d);
-    
+
     for d_idx = 1:num_d
         d_val = d_grid(d_idx);
         fprintf_both(fid, '  > Running d_val = %d ...\n', d_val);
@@ -186,6 +205,7 @@ function res = Run_Sec5_Scenario(dgp_type, rho, pi0, rho_eu, T, numMCreps, fid)
         
         b_ols = zeros(numMCreps, 1);
         b_fgls = zeros(numMCreps, 1);
+        b_fs = zeros(numMCreps, 1);
         mse_s_ols = zeros(numMCreps, 1);
         mse_s_fgls = zeros(numMCreps, 1);
         
@@ -234,16 +254,37 @@ function res = Run_Sec5_Scenario(dgp_type, rho, pi0, rho_eu, T, numMCreps, fid)
             mse_s_fgls(i_sim) = sum((s_f_g_d - S0_sim).^2) / T;
         end
         rmpath('..\Mbreak_Multivariate');
-        
+
+        % ---------------------------------------------------------
+        % STAGE 4: Competitor - full-sample IV \hat{beta}_{FS} (optional)
+        % ---------------------------------------------------------
+        if include_competitors
+            addpath('competitors_FS');
+            parfor i_sim = 1:numMCreps
+                Y_sim = Y_all{i_sim}; D_sim = D_all{i_sim}; 
+                Z_sim = Z_all{i_sim}; X_sim = X_all{i_sim}; 
+                
+                [b_fs_i, ~, ~] = est_iv_fullsample(Y_sim, D_sim, Z_sim, X_sim);
+                
+                b_fs(i_sim) = b_fs_i;
+            end
+            rmpath('competitors_FS');
+        end
+
         % ---------------------------------------------------------
         % AGGREGATION & METRICS
         % ---------------------------------------------------------
         Bias_OLS(d_idx) = mean(b_ols - beta_dgp, 'omitnan');
         MSE_OLS(d_idx) = mean((b_ols - beta_dgp).^2, 'omitnan');
-        
+
         Bias_FGLS(d_idx) = mean(b_fgls - beta_dgp, 'omitnan');
         MSE_FGLS(d_idx) = mean((b_fgls - beta_dgp).^2, 'omitnan');
-        
+
+        if include_competitors
+            Bias_FS(d_idx) = mean(b_fs - beta_dgp, 'omitnan');
+            MSE_FS(d_idx) = mean((b_fs - beta_dgp).^2, 'omitnan');
+        end
+
         MSE_S_OLS(d_idx) = mean(mse_s_ols, 'omitnan');
         MSE_S_FGLS(d_idx) = mean(mse_s_fgls, 'omitnan');
         
@@ -252,15 +293,24 @@ function res = Run_Sec5_Scenario(dgp_type, rho, pi0, rho_eu, T, numMCreps, fid)
         % ---------------------------------------------------------
         fprintf_both(fid, '    >> Completed d = %d. Partial Results (x 10^2):\n', d_val);
         fprintf_both(fid, '       * MSE(S_hat)  | OLS: %8.2f | FGLS: %8.2f\n', MSE_S_OLS(d_idx)*100, MSE_S_FGLS(d_idx)*100);
-        fprintf_both(fid, '       * Bias(beta)  | OLS: %8.2f | FGLS: %8.2f\n', Bias_OLS(d_idx)*100, Bias_FGLS(d_idx)*100);
-        fprintf_both(fid, '       * MSE(beta)   | OLS: %8.2f | FGLS: %8.2f\n\n', MSE_OLS(d_idx)*100, MSE_FGLS(d_idx)*100);
+        if include_competitors
+            fprintf_both(fid, '       * Bias(beta)  | OLS: %8.2f | FGLS: %8.2f | FS: %8.2f\n', Bias_OLS(d_idx)*100, Bias_FGLS(d_idx)*100, Bias_FS(d_idx)*100);
+            fprintf_both(fid, '       * MSE(beta)   | OLS: %8.2f | FGLS: %8.2f | FS: %8.2f\n\n', MSE_OLS(d_idx)*100, MSE_FGLS(d_idx)*100, MSE_FS(d_idx)*100);
+        else
+            fprintf_both(fid, '       * Bias(beta)  | OLS: %8.2f | FGLS: %8.2f\n', Bias_OLS(d_idx)*100, Bias_FGLS(d_idx)*100);
+            fprintf_both(fid, '       * MSE(beta)   | OLS: %8.2f | FGLS: %8.2f\n\n', MSE_OLS(d_idx)*100, MSE_FGLS(d_idx)*100);
+        end
     end
-    
+
     res.d_grid = d_grid;
     res.Bias_OLS = Bias_OLS;
     res.MSE_OLS = MSE_OLS;
     res.Bias_FGLS = Bias_FGLS;
     res.MSE_FGLS = MSE_FGLS;
+    if include_competitors
+        res.Bias_FS = Bias_FS;
+        res.MSE_FS = MSE_FS;
+    end
     res.MSE_S_OLS = MSE_S_OLS;
     res.MSE_S_FGLS = MSE_S_FGLS;
 end
@@ -269,8 +319,9 @@ end
 %  EXPORT MODULE (Paper Exact Formatting)
 % =========================================================================
 
-function export_paper_exhibits_sec5_to_txt(All_Results, n_sims, folder_name, run_target, ts_file, ts_disp)
-    filename = fullfile(folder_name, sprintf('Paper_Exhibits_SEC5_%dsims_%s.txt', n_sims, ts_file));
+function export_paper_exhibits_sec5_to_txt(All_Results, n_sims, folder_name, run_target, ts_file, ts_disp, include_competitors)
+    if include_competitors, comp_tag = '_FS'; else, comp_tag = ''; end
+    filename = fullfile(folder_name, sprintf('Paper_Exhibits_SEC5_%dsims%s_%s.txt', n_sims, comp_tag, ts_file));
     fid = fopen(filename, 'w');
     if fid == -1, return; end
     
@@ -299,7 +350,11 @@ function export_paper_exhibits_sec5_to_txt(All_Results, n_sims, folder_name, run
         
         % --- EXPORT TABLE 7 ---
         fprintf(fid, '============================================================================================================\n');
-        fprintf(fid, 'Table 7: Bias and MSE of \\hat{\\beta}(\\hat{S}_{T,OLS}) and \\hat{\\beta}(\\hat{S}_{T,FGLS})\n');
+        if include_competitors
+            fprintf(fid, 'Table 7: Bias and MSE of \\hat{\\beta}_{FS}, \\hat{\\beta}(\\hat{S}_{T,OLS}) and \\hat{\\beta}(\\hat{S}_{T,FGLS})\n');
+        else
+            fprintf(fid, 'Table 7: Bias and MSE of \\hat{\\beta}(\\hat{S}_{T,OLS}) and \\hat{\\beta}(\\hat{S}_{T,FGLS})\n');
+        end
         fprintf(fid, '============================================================================================================\n');
         write_tab67_block(fid, All_Results, 0.25, 0.6, false);
         write_tab67_block(fid, All_Results, 0.75, 0.6, false);
@@ -311,7 +366,11 @@ function export_paper_exhibits_sec5_to_txt(All_Results, n_sims, folder_name, run
     
     if run_tab8
         fprintf(fid, '============================================================================================================\n');
-        fprintf(fid, 'Table 8: Bias and MSE of \\hat{\\beta}(\\hat{S}_{T,OLS}) and \\hat{\\beta}(\\hat{S}_{T,FGLS})\n');
+        if include_competitors
+            fprintf(fid, 'Table 8: Bias and MSE of \\hat{\\beta}_{FS}, \\hat{\\beta}(\\hat{S}_{T,OLS}) and \\hat{\\beta}(\\hat{S}_{T,FGLS})\n');
+        else
+            fprintf(fid, 'Table 8: Bias and MSE of \\hat{\\beta}(\\hat{S}_{T,OLS}) and \\hat{\\beta}(\\hat{S}_{T,FGLS})\n');
+        end
         fprintf(fid, '============================================================================================================\n');
         write_tab8_block(fid, All_Results, 4);
         write_tab8_block(fid, All_Results, 8);
@@ -343,18 +402,31 @@ function write_tab67_block(fid, All_Results, rho, pi0, is_tab6)
         fprintf(fid, '%12.2f%12.2f%12.2f', res_0.MSE_S_FGLS * 100);
         fprintf(fid, '%12.2f%12.2f%12.2f\n\n', res_50.MSE_S_FGLS * 100);
     else
+        % Row order as published: FS, OLS, FGLS (bias), then FS, OLS, FGLS (MSE)
+        if isfield(res_0, 'Bias_FS') && isfield(res_50, 'Bias_FS')
+            fprintf(fid, '%-36s', 'Bias(\hat{\beta}_{FS})');
+            fprintf(fid, '%12.2f%12.2f%12.2f', res_0.Bias_FS * 100);
+            fprintf(fid, '%12.2f%12.2f%12.2f\n', res_50.Bias_FS * 100);
+        end
+
         fprintf(fid, '%-36s', 'Bias(\hat{\beta}(\hat{S}_{T,OLS}))');
         fprintf(fid, '%12.2f%12.2f%12.2f', res_0.Bias_OLS * 100);
         fprintf(fid, '%12.2f%12.2f%12.2f\n', res_50.Bias_OLS * 100);
-        
+
         fprintf(fid, '%-36s', 'Bias(\hat{\beta}(\hat{S}_{T,FGLS}))');
         fprintf(fid, '%12.2f%12.2f%12.2f', res_0.Bias_FGLS * 100);
         fprintf(fid, '%12.2f%12.2f%12.2f\n', res_50.Bias_FGLS * 100);
-        
+
+        if isfield(res_0, 'MSE_FS') && isfield(res_50, 'MSE_FS')
+            fprintf(fid, '%-36s', 'MSE(\hat{\beta}_{FS})');
+            fprintf(fid, '%12.2f%12.2f%12.2f', res_0.MSE_FS * 100);
+            fprintf(fid, '%12.2f%12.2f%12.2f\n', res_50.MSE_FS * 100);
+        end
+
         fprintf(fid, '%-36s', 'MSE(\hat{\beta}(\hat{S}_{T,OLS}))');
         fprintf(fid, '%12.2f%12.2f%12.2f', res_0.MSE_OLS * 100);
         fprintf(fid, '%12.2f%12.2f%12.2f\n', res_50.MSE_OLS * 100);
-        
+
         fprintf(fid, '%-36s', 'MSE(\hat{\beta}(\hat{S}_{T,FGLS}))');
         fprintf(fid, '%12.2f%12.2f%12.2f', res_0.MSE_FGLS * 100);
         fprintf(fid, '%12.2f%12.2f%12.2f\n\n', res_50.MSE_FGLS * 100);
@@ -378,19 +450,32 @@ function write_tab8_block(fid, All_Results, d2_val)
     fprintf(fid, '                                     ---------------------------------   ---------------------------------\n');
     fprintf(fid, 'd_2 = %d, pi0 = 0.6                     d = 16       d = 24      d = 32      d = 16       d = 24      d = 32\n', d2_val);
     fprintf(fid, '------------------------------------------------------------------------------------------------------------\n');
-    
+
+    % Row order as published: FS, OLS, FGLS (bias), then FS, OLS, FGLS (MSE)
+    if isfield(res_25, 'Bias_FS') && isfield(res_75, 'Bias_FS')
+        fprintf(fid, '%-36s', 'Bias(\hat{\beta}_{FS})');
+        fprintf(fid, '%12.2f%12.2f%12.2f', res_25.Bias_FS * 100);
+        fprintf(fid, '%12.2f%12.2f%12.2f\n', res_75.Bias_FS * 100);
+    end
+
     fprintf(fid, '%-36s', 'Bias(\hat{\beta}(\hat{S}_{T,OLS}))');
     fprintf(fid, '%12.2f%12.2f%12.2f', res_25.Bias_OLS * 100);
     fprintf(fid, '%12.2f%12.2f%12.2f\n', res_75.Bias_OLS * 100);
-    
+
     fprintf(fid, '%-36s', 'Bias(\hat{\beta}(\hat{S}_{T,FGLS}))');
     fprintf(fid, '%12.2f%12.2f%12.2f', res_25.Bias_FGLS * 100);
     fprintf(fid, '%12.2f%12.2f%12.2f\n', res_75.Bias_FGLS * 100);
-    
+
+    if isfield(res_25, 'MSE_FS') && isfield(res_75, 'MSE_FS')
+        fprintf(fid, '%-36s', 'MSE(\hat{\beta}_{FS})');
+        fprintf(fid, '%12.2f%12.2f%12.2f', res_25.MSE_FS * 100);
+        fprintf(fid, '%12.2f%12.2f%12.2f\n', res_75.MSE_FS * 100);
+    end
+
     fprintf(fid, '%-36s', 'MSE(\hat{\beta}(\hat{S}_{T,OLS}))');
     fprintf(fid, '%12.2f%12.2f%12.2f', res_25.MSE_OLS * 100);
     fprintf(fid, '%12.2f%12.2f%12.2f\n', res_75.MSE_OLS * 100);
-    
+
     fprintf(fid, '%-36s', 'MSE(\hat{\beta}(\hat{S}_{T,FGLS}))');
     fprintf(fid, '%12.2f%12.2f%12.2f', res_25.MSE_FGLS * 100);
     fprintf(fid, '%12.2f%12.2f%12.2f\n\n', res_75.MSE_FGLS * 100);
