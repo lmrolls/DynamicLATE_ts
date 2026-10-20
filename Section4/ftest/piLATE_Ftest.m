@@ -48,6 +48,34 @@ function Results = piLATE_Ftest(D, Z, X, options)
     vector_piL = options.piLow : 0.1 : 1;
     step_pi = 0.05;
     
+    % [PERF] Each (pi, m) cell of the search is computed once. S_Dates_m depends on pi only
+    % through Tpi = floor(pi*T), so the cells are indexed by (Tpi, m): the pi_low loop below,
+    % which in the original code recomputed the same cells for every pi_low, now only reads
+    % them. The regime statistics inside S_Dates_m are computed once per m (S_Dates_m_grid).
+    % The values and the order in which the maxima are taken are unchanged.
+    Tpi_all = [];
+    for piL_idx = 1:length(vector_piL)
+        num_pis = vector_piL(piL_idx) : step_pi : 1;
+        for pi_idx = 1:length(num_pis)
+            Tpi_all(end+1) = floor(num_pis(pi_idx) * T); %#ok<AGROW>
+        end
+    end
+    Tpi_u = unique(Tpi_all);
+    S_cells = S_Dates_m_grid(D, Z, X, datevec, T, Tpi_u, 1:options.m_breaks);
+    F_cells = zeros(length(Tpi_u), options.m_breaks);
+    for m = 1:options.m_breaks
+        for k = 1:length(Tpi_u)
+            S_m = S_cells{k, m};
+            S_index = zeros(T, 1);
+            for irow = 1:size(S_m, 1), S_index(S_m(irow,1):S_m(irow,2)) = 1; end
+            
+            % Compression
+            [D_tilde, Z_tilde, T_eff] = apply_Ct_operator(D, Z, X, S_index);
+            
+            F_cells(k, m) = F_ST_Stat_Legacy(D_tilde, Z_tilde, T_eff, q, p, options.Hac_option);
+        end
+    end
+    
     Sup_F_piL  = zeros(length(vector_piL), 1);
     Sup_m_piL  = zeros(length(vector_piL), 1);
     Sup_pi_piL = zeros(length(vector_piL), 1);
@@ -57,17 +85,8 @@ function Results = piLATE_Ftest(D, Z, X, options)
         
         for m = 1:options.m_breaks
             for pi_idx = 1:length(num_pis)
-                % External dependency
-                S_m = S_Dates_m(D, Z, X, datevec, T, num_pis(pi_idx), m);
-                S_index = zeros(T, 1);
-                for irow = 1:size(S_m, 1), S_index(S_m(irow,1):S_m(irow,2)) = 1; end
-                
-                % Compression
-                [D_tilde, Z_tilde, T_eff] = apply_Ct_operator(D, Z, X, S_index);
-                
-               
-                F_ST(pi_idx, m) = F_ST_Stat_Legacy(D_tilde, Z_tilde, T_eff, q, p, options.Hac_option);
-                
+                k = find(Tpi_u == floor(num_pis(pi_idx) * T), 1);
+                F_ST(pi_idx, m) = F_cells(k, m);
             end
         end
         
@@ -92,7 +111,7 @@ function Results = piLATE_Ftest(D, Z, X, options)
     end
     
     % --- 4. OUTPUT PREPARATION ---
-    S_m_opt = S_Dates_m(D, Z, X, datevec, T, best_pi, best_m);
+    S_m_opt = S_cells{find(Tpi_u == floor(best_pi * T), 1), best_m};   % = S_Dates_m(D, Z, X, datevec, T, best_pi, best_m)
     S_index_opt = zeros(T, 1);
     for irow = 1:size(S_m_opt, 1), S_index_opt(S_m_opt(irow,1):S_m_opt(irow,2)) = 1; end
     

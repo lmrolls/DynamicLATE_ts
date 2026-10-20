@@ -92,6 +92,22 @@ function [CV_Table] = Compute_CVs(q_value, piLow, T, totreps, qw, set_seed)
 
             Sup_F_piL = zeros(length(vector_piL), 1);
 
+            % [PERF] S_Dates_Norm depends on pi only through Tpi = floor(pi*T): the selected
+            % sub-sample of each (Tpi, m) cell is computed once (S_Dates_Norm + sortrows +
+            % merge_Dates) and reused by every pi_low block that contains that cell, instead of
+            % being recomputed for every pi_low. The statistic is still evaluated for every
+            % (pi_low, pi, m) with the same arithmetic, so the values and the maxima are unchanged.
+            Tpi_all = [];
+            for piL_idx = 1:length(vector_piL)
+                num_pis = vector_piL(piL_idx):step_pi:1;
+                for pi_s_idx = 1:length(num_pis)
+                    Tpi_all(end+1) = floor(num_pis(pi_s_idx) * T); %#ok<AGROW>
+                end
+            end
+            Tpi_u = unique(Tpi_all);
+            S_cache = cell(length(Tpi_u), max_breaks);
+            S_done = false(length(Tpi_u), max_breaks);
+
             % Loop su vari pi_Lower nella griglia (se vector_piL ha più elementi)
             for piL_idx = 1:length(vector_piL)
                 num_pis = vector_piL(piL_idx):step_pi:1;
@@ -102,17 +118,23 @@ function [CV_Table] = Compute_CVs(q_value, piLow, T, totreps, qw, set_seed)
                     for pi_s_idx = 1:index_pis
                         current_pi = num_pis(pi_s_idx);
 
-                       
-                        S_m = S_Dates_Norm(D, datevec, T, current_pi, m);
+                        kc = find(Tpi_u == floor(current_pi * T), 1);
+                        if ~S_done(kc, m)
+                            S_m = S_Dates_Norm(D, datevec, T, current_pi, m);
 
-                        if isempty(S_m)
-                            error('Error: S_m is empty');
-                        end
+                            if isempty(S_m)
+                                error('Error: S_m is empty');
+                            end
 
-                        S_m = sortrows(S_m, 1); 
+                            S_m = sortrows(S_m, 1); 
 
-                        if size(S_m,1) > 1
-                            [S_m] = merge_Dates(S_m); 
+                            if size(S_m,1) > 1
+                                [S_m] = merge_Dates(S_m); 
+                            end
+                            S_cache{kc, m} = S_m;
+                            S_done(kc, m) = true;
+                        else
+                            S_m = S_cache{kc, m};
                         end
 
                         vec_sum = zeros(1, qw);

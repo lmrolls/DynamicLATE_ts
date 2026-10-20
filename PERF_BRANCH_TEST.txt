@@ -1,1 +1,0 @@
-Mock file for the perf branch check (20/10/2026). To be deleted after the test.

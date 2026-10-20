@@ -54,6 +54,45 @@ function [stats_AMS, stats_ST, cv_LR] = robust_LATE_inference(Y, D, Z, X, beta_H
         params.h_proc = round(params.eps1 * T);
         [~, datevec_ST, ~] = Procedure_piL_Full_Sample(T, D, Z, q, params.max_breaks, params.h_proc, params.eps1, 1, 0, 1, 1, 1, 0, X, p, 0.0001, 20, 0, 0, 1, 1);
         
+        % [PERF] Each (pi, m) cell of the search is computed once. S_Dates_m_M2_Core depends on
+        % pi only through Tpi = floor(pi*T), so the cells are indexed by (Tpi, m): the pi_low
+        % loop below, which in the original code recomputed the same cells for every pi_low,
+        % now only reads them. The regime statistics of the selection rule are computed once
+        % per m (S_Dates_m_M2_regimes) and reused for every Tpi (S_Dates_m_M2_select).
+        % The values and the order in which the maxima are taken are unchanged.
+        Tpi_all = [];
+        for piL_idx = 1:length(params.vector_piL)
+            num_pis = params.vector_piL(piL_idx):params.step_pi:1;
+            for pi_idx = 1:length(num_pis)
+                Tpi_all(end+1) = floor(num_pis(pi_idx) * T); %#ok<AGROW>
+            end
+        end
+        Tpi_u = unique(Tpi_all);
+        S_cells  = cell(length(Tpi_u), params.max_breaks);
+        M2_cells = NaN(length(Tpi_u), params.max_breaks);
+        for m_idx = 1:params.max_breaks
+            if ~(m_idx <= size(datevec_ST, 2) && any(datevec_ST(:, m_idx) ~= 0))
+                continue;
+            end
+            [Table_m, A_m] = S_Dates_m_M2_regimes(Y, D, Z, X, datevec_ST, T, m_idx, q, p, a_vec, b_vec, params.Hac_option);
+            for k = 1:length(Tpi_u)
+                S_seg = S_Dates_m_M2_select(Y, D, Z, X, T, Tpi_u(k), m_idx, Table_m, A_m, q, p, a_vec, b_vec, params.Hac_option);
+                S_cells{k, m_idx} = S_seg;
+                Index_S = zeros(T, 1);
+                if ~isempty(S_seg)
+                    for r = 1:size(S_seg, 1)
+                        if S_seg(r,1) >= 1 && S_seg(r,2) <= T, Index_S(S_seg(r,1):S_seg(r,2)) = 1; end
+                    end
+                end
+                
+                Z_ST_tmp = Z; Z_ST_tmp(Index_S == 0, :) = 0;
+                if sum(Index_S) > max(q, p)
+                    res_tmp = computeStats_Internal(Y, D, Mx * Z_ST_tmp, X, T, q, p, a_vec, b_vec, false, params.Hac_option);
+                    M2_cells(k, m_idx) = res_tmp.M2;
+                end
+            end
+        end
+        
         Sup_M2_piL = NaN(length(params.vector_piL), 1); 
         Sup_m_piL = NaN(length(params.vector_piL), 1); 
         Sup_pi_piL = NaN(length(params.vector_piL), 1);
@@ -63,25 +102,8 @@ function [stats_AMS, stats_ST, cv_LR] = robust_LATE_inference(Y, D, Z, X, beta_H
             M2_pi_m = NaN(length(num_pis), params.max_breaks);
             for m_idx = 1:params.max_breaks
                 for pi_idx = 1:length(num_pis)
-                    Index_S = zeros(T, 1);
-                    if m_idx == 0
-                        Index_S = ones(T, 1);
-                    elseif m_idx <= size(datevec_ST, 2) && any(datevec_ST(:, m_idx) ~= 0)
-                        S_seg = S_Dates_m_M2_Core(Y, D, Z, X, Mx, beta_H0, datevec_ST, T, num_pis(pi_idx), m_idx, q, p, a_vec, b_vec, params.Hac_option);
-                        if ~isempty(S_seg)
-                            for r = 1:size(S_seg, 1)
-                                if S_seg(r,1) >= 1 && S_seg(r,2) <= T, Index_S(S_seg(r,1):S_seg(r,2)) = 1; end
-                            end
-                        end
-                    else
-                        continue; 
-                    end
-                    
-                    Z_ST_tmp = Z; Z_ST_tmp(Index_S == 0, :) = 0;
-                    if sum(Index_S) > max(q, p)
-                        res_tmp = computeStats_Internal(Y, D, Mx * Z_ST_tmp, X, T, q, p, a_vec, b_vec, false, params.Hac_option);
-                        M2_pi_m(pi_idx, m_idx) = res_tmp.M2;
-                    end
+                    k = find(Tpi_u == floor(num_pis(pi_idx) * T), 1);
+                    M2_pi_m(pi_idx, m_idx) = M2_cells(k, m_idx);
                 end
             end
             [Val_m, ind_m] = max(M2_pi_m, [], 1); [Val_m_pi, ind_m_pi] = max(Val_m);
@@ -94,7 +116,7 @@ function [stats_AMS, stats_ST, cv_LR] = robust_LATE_inference(Y, D, Z, X, beta_H
         
         [~, idx_Sup] = max(Sup_M2_piL);
         if ~isempty(idx_Sup) && ~isnan(Sup_m_piL(idx_Sup))
-            S_seg_final = S_Dates_m_M2_Core(Y, D, Z, X, Mx, beta_H0, datevec_ST, T, Sup_pi_piL(idx_Sup), Sup_m_piL(idx_Sup), q, p, a_vec, b_vec, params.Hac_option);
+            S_seg_final = S_cells{find(Tpi_u == floor(Sup_pi_piL(idx_Sup) * T), 1), Sup_m_piL(idx_Sup)};   % = S_Dates_m_M2_Core(..., Sup_pi_piL(idx_Sup), Sup_m_piL(idx_Sup), ...)
             Index_S_final = zeros(T, 1);
             if ~isempty(S_seg_final)
                 for r = 1:size(S_seg_final, 1)
@@ -165,13 +187,12 @@ function stats = computeStats_Internal(Y, D, Zbar, X, T_eff, q, p, a, b, is_ST, 
     stats.M2 = N2_val' * N2_val;
 end
 
-function [S_m] = S_Dates_m_M2_Core(Y, D, Z, X, Mx, beta_H0, datevec, T, pi, m, q, p, a_vec, b_vec, Hac_option)
-    Tpi = floor(pi * T); vec_M2_ST = zeros(T, 1);
-    if m == 1, Break_Date = [1, datevec(1,1); datevec(1,1)+1, T];
-    elseif m == 2, Break_Date = [1, datevec(1,2); datevec(1,2)+1, datevec(2,2); datevec(2,2)+1, T];
-    elseif m == 3, Break_Date = [1, datevec(1,3); datevec(1,3)+1, datevec(2,3); datevec(2,3)+1, datevec(3,3); datevec(3,3)+1, T];
-    elseif m == 4, Break_Date = [1, datevec(1,4); datevec(1,4)+1, datevec(2,4); datevec(2,4)+1, datevec(3,4); datevec(3,4)+1, datevec(4,4); datevec(4,4)+1, T];
-    else, Break_Date = [1, datevec(1,5); datevec(1,5)+1, datevec(2,5); datevec(2,5)+1, datevec(3,5); datevec(3,5)+1, datevec(4,5); datevec(4,5)+1, datevec(5,5); datevec(5,5)+1, T]; end
+function [Table_t_stat_dates, A] = S_Dates_m_M2_regimes(Y, D, Z, X, datevec, T, m, q, p, a_vec, b_vec, Hac_option)
+    % [PERF] Step 1 of the original S_Dates_m_M2_Core: M2 statistic of each of the m+1 regimes
+    % delimited by datevec(1:m, m), table [M2, start, end, cumulative length] sorted by M2.
+    % Depends on m only (not on pi): computed once per m and reused for every Tpi.
+    bd = datevec(1:m, m);
+    Break_Date = [[1; bd(:) + 1], [bd(:); T]];
     Table_t_stat_dates = zeros(m+1, 3);
     for i = 1:m+1
         CT_Z_S = Z(Break_Date(i,1):Break_Date(i,2), :); T_S = size(CT_Z_S, 1);
@@ -186,6 +207,13 @@ function [S_m] = S_Dates_m_M2_Core(Y, D, Z, X, Mx, beta_H0, datevec, T, pi, m, q
     end
     Table_t_stat_dates = sortrows(Table_t_stat_dates, 1, 'descend');
     A = cumsum(Table_t_stat_dates(:,3) - Table_t_stat_dates(:,2) + 1, 1); Table_t_stat_dates = [Table_t_stat_dates A];
+end
+
+function [S_m] = S_Dates_m_M2_select(Y, D, Z, X, T, Tpi, m, Table_t_stat_dates, A, q, p, a_vec, b_vec, Hac_option)
+    % [PERF] Step 2 of the original S_Dates_m_M2_Core for a given Tpi: greedy selection of the
+    % regimes of the sorted table and sliding window (windows of Missing+1 observations,
+    % i = 1, ..., Length-Missing, as in the tryMM version) inside the last regime.
+    vec_M2_ST = zeros(T, 1);
     AA = A >= Tpi; AA = AA & cumsum(AA, 1) < 2;
     [ind_larger, ~] = find(AA); ind_smaller = ind_larger - 1;
     if ind_smaller < 1, Missing = Tpi; Start_date = Table_t_stat_dates(ind_larger, 2) - 1; End_date = Table_t_stat_dates(ind_larger, 3);
@@ -210,4 +238,11 @@ function [S_m] = S_Dates_m_M2_Core(Y, D, Z, X, Mx, beta_H0, datevec, T, pi, m, q
         pi_Dates = sortrows([Table_t_stat_dates(1:ind_smaller, 2:3); Start_date+ind, Start_date+ind+Missing-1], 1, 'ascend');
     end
     S_m = pi_Dates;
+end
+
+function [S_m] = S_Dates_m_M2_Core(Y, D, Z, X, Mx, beta_H0, datevec, T, pi, m, q, p, a_vec, b_vec, Hac_option) %#ok<INUSL>
+    % Original entry point (one cell): kept for reference and tests; identical output.
+    Tpi = floor(pi * T);
+    [Table_t_stat_dates, A] = S_Dates_m_M2_regimes(Y, D, Z, X, datevec, T, m, q, p, a_vec, b_vec, Hac_option);
+    S_m = S_Dates_m_M2_select(Y, D, Z, X, T, Tpi, m, Table_t_stat_dates, A, q, p, a_vec, b_vec, Hac_option);
 end
