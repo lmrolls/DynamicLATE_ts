@@ -9,10 +9,15 @@ function Paper_Results = runSection6_Simul(n_sims_input, run_target, include_com
 %   res = runSection6_Simul(10000, 'tab10')     % Runs EXCLUSIVELY Table 10
 %   res = runSection6_Simul(10000, 'fig8')      % Runs EXCLUSIVELY Figure 8
 %   res = runSection6_Simul(10000, 'all', false)% pi-LATE tests only (no competitors)
+%   res = runSection6_Simul(10000, 'tabAR')     % Supplement Table 2 (AR(1) errors, 18 cells)
+%   res = runSection6_Simul(10000, 'figAR')     % Supplement Figure 1 (size-adjusted power, AR(1) errors)
+%   res = runSection6_Simul(10000, 'supp')      % Supplement: 'tabAR' + 'figAR'
 %
 % INPUTS:
 %   n_sims_input : Number of Monte Carlo replications (Default: 10000)
-%   run_target   : Target exhibit -> 'all', 'tab9', 'tab10', 'fig7', 'fig8'
+%   run_target   : Target exhibit -> 'all', 'tab9', 'tab10', 'fig7', 'fig8' (paper, Section 6);
+%                  'tabAR', 'figAR', 'supp' (supplement, Section N.D: AR(1) errors). 'all' runs the
+%                  four paper exhibits only, as before; the supplement targets are run separately.
 %   include_competitors : (Optional) true (default) also computes the 9 MM test
 %                  statistics (GMM-S, split-S (GMM), qLL-S, exp-S, ave-S, split-S (IV),
 %                  split-KLM, split-JKLM, split-CLR) and the raw diagnostics
@@ -34,6 +39,18 @@ function Paper_Results = runSection6_Simul(n_sims_input, run_target, include_com
 %     percentile under H0, as for the pi-LATE tests.
 %   * The pi-LATE stages, DGP and seeds are unchanged: the 6 pi-LATE columns are
 %     identical with and without the competitors.
+%
+% SUPPLEMENT, SECTION N.D (AR(1) ERRORS; legacy scripts Sims_Ident_Rob_Tests_AR1*.m):
+%   * DGP: u_t = rho_u u_{t-1} + v_{u,t}, e_t = rho_e e_{t-1} + v_{e,t}, innovations jointly
+%     normal with correlation 0.50, rho_e = rho_u in {0.25, 0.50, 0.75}, burn-in of 100 periods,
+%     no exogenous regressor (Xactive = 0). Same regime structure and seeds as the i.i.d. targets
+%     (H0: 1e6 + i*100 + 16e7; power: b_idx*1e7 + i*100 + 25e7), as in the legacy per-cell scripts.
+%   * 'tabAR' (Table 2): T=200/pi0=0.8 and T=400/pi0=0.6, d in {10, 16, 24}: null rejection
+%     frequencies at the theoretical/asymptotic CVs (size-adjusted CVs are also stored).
+%   * 'figAR' (Figure 1): T=400, pi0=0.6, rho_e=rho_u in {0.25, 0.75}, d in {10, 16, 24},
+%     size-adjusted power on beta in 0:0.1:0.8 (empirical 95th percentile under H0).
+%   * The H0 statistics of every replication are stored ('stats_H0', n_sims x n_stats) so that
+%     the run can be compared replication by replication with the legacy .mat files.
 % =========================================================================
 
     clc; 
@@ -53,15 +70,17 @@ function Paper_Results = runSection6_Simul(n_sims_input, run_target, include_com
     end
     mm_cv_seed_per_scenario = true;   % Table 9: legacy per-scenario seeding of the MM asymptotic CVs
     
-    valid_targets = {'all', 'tab9', 'tab10', 'fig7', 'fig8'};
+    valid_targets = {'all', 'tab9', 'tab10', 'fig7', 'fig8', 'tabar', 'figar', 'supp'};
     if ~ismember(lower(run_target), valid_targets)
-        error('Error: run_target must be ''all'', ''tab9'', ''tab10'', ''fig7'', or ''fig8''.');
+        error('Error: run_target must be ''all'', ''tab9'', ''tab10'', ''fig7'', ''fig8'', ''tabAR'', ''figAR'' or ''supp''.');
     end
-    
+
     run_tab9  = strcmpi(run_target, 'all') || strcmpi(run_target, 'tab9');
     run_tab10 = strcmpi(run_target, 'all') || strcmpi(run_target, 'tab10');
     run_fig7  = strcmpi(run_target, 'all') || strcmpi(run_target, 'fig7');
     run_fig8  = strcmpi(run_target, 'all') || strcmpi(run_target, 'fig8');
+    run_tabAR = strcmpi(run_target, 'supp') || strcmpi(run_target, 'tabar');   % supplement Table 2
+    run_figAR = strcmpi(run_target, 'supp') || strcmpi(run_target, 'figar');   % supplement Figure 1
 
     % --- DESCRIPTIVE STRINGS FOR LOGS AND DIRECTORY SETUP ---
     folder_name = sprintf('Paper_Exhibits_Results_%dsims_SEC6_%s%s', n_sims, upper(run_target), comp_tag);
@@ -580,8 +599,138 @@ function Paper_Results = runSection6_Simul(n_sims_input, run_target, include_com
         end
     end
 
+    % =========================================================================
+    % ROUTINE: SUPPLEMENT TABLE 2 (Empirical Size, AR(1) errors; T=200/pi0=0.8 and T=400/pi0=0.6)
+    % Legacy: Sims_Ident_Rob_Tests_AR1*.m, one cell per script (d_idx_cv = 1), random = 0.
+    % =========================================================================
+    if run_tabAR
+        reset_parallel_pool(fid_log);
+        fprintf_both(fid_log, '\n>>> INITIALIZING REPLICATION: SUPPLEMENT TABLE 2 (Empirical Size, AR(1) errors)\n');
+        fprintf_both(fid_log, '>>> rho(innovations)=0.50, rho_e=rho_u in {0.25,0.50,0.75}, burn-in 100, Xactive=0 (LEGACY SEED MATCH)\n');
+        fprintf_both(fid_log, '===================================================================\n');
+
+        beta_H0 = 0.0; Xactive = 0; rho_innov_AR = 0.50; burn_in_AR = 100;
+        T_grid_AR = [200, 400]; pi0_of_T_AR = [0.8, 0.6];
+        rho_ar_grid = [0.25, 0.50, 0.75]; d_grid = [10, 16, 24];
+
+        for iT = 1:length(T_grid_AR)
+            T_val = T_grid_AR(iT); pi0_val = pi0_of_T_AR(iT);
+            [params_MM_base, params_MM_IV_base] = mm_params_for_T(T_val, include_competitors, trim_prop_MM, q_instr_MM, p_param_dim_MM);
+            for rho_ar = rho_ar_grid
+                for d_val = d_grid
+                    run_label = sprintf('TabAR_T%d_rho%02d_d%d', T_val, rho_ar*100, d_val);
+                    fprintf_both(fid_log, '\n--- Starting Iteration: Suppl. Tab 2 [T=%d, pi0=%.1f, rho_e=rho_u=%.2f, d=%d] ---\n', T_val, pi0_val, rho_ar, d_val);
+
+                    theta_H0 = d_val / sqrt(T_val);
+                    rej_matrix = zeros(n_sims, n_stats);
+                    raw_matrix = zeros(n_sims, 3);
+                    stats_H0_matrix = zeros(n_sims, n_stats);
+
+                    parfor i_sims = 1:n_sims
+                        warning('off','all');
+                        rng_seed = 1*1e6 + i_sims*100 + 16e7;
+
+                        [Y_s, D_s, Z_raw, X_raw] = generate_DGP_AR(T_val, pi0_val, theta_H0, 0, beta_H0, 0, 0, rho_innov_AR, rho_ar, rho_ar, burn_in_AR, Xactive, rng_seed);
+                        [vals, rej_row, raw_row] = evaluate_replication(Y_s, D_s, Z_raw, X_raw, T_val, beta_H0, params_core, rng_seed, Xactive, ...
+                            include_competitors, params_MM_base, params_MM_IV_base, theoretical_CVs_MM, alpha_test_MM, p_param_dim_MM, q_instr_MM);
+                        rej_matrix(i_sims, :) = rej_row;
+                        raw_matrix(i_sims, :) = raw_row;
+                        stats_H0_matrix(i_sims, :) = vals;
+                    end
+                    emp_size = mean(rej_matrix, 1, 'omitnan');
+                    emp_CVs  = prctile(stats_H0_matrix, 95, 1);
+                    if include_competitors
+                        raw_means = mean(raw_matrix, 1, 'omitnan');
+                        Paper_Results.(run_label) = struct('params', [T_val, pi0_val, rho_ar, d_val], 'size', emp_size, 'raw', raw_means, ...
+                                                           'emp_CVs', emp_CVs, 'stats_H0', stats_H0_matrix);
+                        print_partial_results_MM(fid_log, emp_size, raw_means, rej_names_all, raw_names_all);
+                    else
+                        Paper_Results.(run_label) = struct('params', [T_val, pi0_val, rho_ar, d_val], 'size', emp_size, ...
+                                                           'emp_CVs', emp_CVs, 'stats_H0', stats_H0_matrix);
+                        print_partial_results(fid_log, emp_size, test_names);
+                    end
+                end
+            end
+        end
+    end
+
+    % =========================================================================
+    % ROUTINE: SUPPLEMENT FIGURE 1 (Size-Adjusted Power, AR(1) errors, T=400, pi0=0.6)
+    % Legacy: Sims_Ident_Rob_Tests_AR1_T400*.m (rho_e=rho_u in {0.25, 0.75}, beta 0:0.1:0.8).
+    % =========================================================================
+    if run_figAR
+        reset_parallel_pool(fid_log);
+        fprintf_both(fid_log, '\n>>> INITIALIZING REPLICATION: SUPPLEMENT FIGURE 1 (Size-Adjusted Power, AR(1) errors, T=400)\n');
+        fprintf_both(fid_log, '===================================================================\n');
+
+        T_val = 400; pi0_val = 0.6; beta_H0 = 0.0; Xactive = 0; rho_innov_AR = 0.50; burn_in_AR = 100;
+        rho_ar_grid = [0.25, 0.75]; d_grid = [10, 16, 24]; beta_grid = 0:0.1:0.8;
+        [params_MM_base, params_MM_IV_base] = mm_params_for_T(T_val, include_competitors, trim_prop_MM, q_instr_MM, p_param_dim_MM);
+
+        for rho_ar = rho_ar_grid
+            for d_val = d_grid
+                run_label = sprintf('FigAR_rho%02d_d%d', rho_ar*100, d_val);
+                fprintf_both(fid_log, '\n--- Starting Power Curve: Suppl. Fig 1 [T=%d, pi0=%.1f, rho_e=rho_u=%.2f, d=%d] ---\n', T_val, pi0_val, rho_ar, d_val);
+
+                theta_H1_strong = d_val / sqrt(T_val);
+                stats_H0_matrix = zeros(n_sims, n_stats);
+                rej_matrix = zeros(n_sims, n_stats);
+                raw_matrix = zeros(n_sims, 3);
+
+                fprintf_both(fid_log, '    > Computing empirical CVs under H0...\n');
+                parfor i_sims = 1:n_sims
+                    warning('off','all');
+                    rng_seed = 1*1e6 + i_sims*100 + 16e7;
+
+                    [Y_s, D_s, Z_raw, X_raw] = generate_DGP_AR(T_val, pi0_val, theta_H1_strong, 0, beta_H0, 0, 0, rho_innov_AR, rho_ar, rho_ar, burn_in_AR, Xactive, rng_seed);
+                    [vals, rej_row, raw_row] = evaluate_replication(Y_s, D_s, Z_raw, X_raw, T_val, beta_H0, params_core, rng_seed, Xactive, ...
+                        include_competitors, params_MM_base, params_MM_IV_base, theoretical_CVs_MM, alpha_test_MM, p_param_dim_MM, q_instr_MM);
+                    stats_H0_matrix(i_sims, :) = vals;
+                    rej_matrix(i_sims, :) = rej_row;
+                    raw_matrix(i_sims, :) = raw_row;
+                end
+                emp_CVs  = prctile(stats_H0_matrix, 95, 1);
+                emp_size = mean(rej_matrix, 1, 'omitnan');
+                if include_competitors
+                    print_partial_results_MM(fid_log, emp_size, mean(raw_matrix, 1, 'omitnan'), rej_names_all, raw_names_all);
+                else
+                    print_partial_results(fid_log, emp_size, test_names);
+                end
+
+                power_matrix = zeros(length(beta_grid), n_stats);
+                raw_matrix_fig = zeros(length(beta_grid), 3);
+                fprintf_both(fid_log, '    > Computing Power over beta grid...\n');
+                for b_idx = 1:length(beta_grid)
+                    beta_alt = beta_grid(b_idx);
+                    rej_H1 = zeros(n_sims, n_stats);
+                    raw_H1 = zeros(n_sims, 3);
+                    parfor i_sims = 1:n_sims
+                        warning('off','all');
+                        rng_seed = b_idx*1e7 + i_sims*100 + 25e7;
+
+                        [Y_s, D_s, Z_raw, X_raw] = generate_DGP_AR(T_val, pi0_val, theta_H1_strong, 0, beta_alt, 0, 0, rho_innov_AR, rho_ar, rho_ar, burn_in_AR, Xactive, rng_seed);
+                        [vals, ~, raw_row] = evaluate_replication(Y_s, D_s, Z_raw, X_raw, T_val, beta_H0, params_core, rng_seed, Xactive, ...
+                            include_competitors, params_MM_base, params_MM_IV_base, theoretical_CVs_MM, alpha_test_MM, p_param_dim_MM, q_instr_MM);
+                        rej_H1(i_sims, :) = vals > emp_CVs;
+                        raw_H1(i_sims, :) = raw_row;
+                    end
+                    power_matrix(b_idx, :) = mean(rej_H1, 1, 'omitnan');
+                    raw_matrix_fig(b_idx, :) = mean(raw_H1, 1, 'omitnan');
+                end
+                if include_competitors
+                    Paper_Results.(run_label) = struct('params', [T_val, pi0_val, rho_ar, d_val], 'beta_grid', beta_grid, 'power', power_matrix, ...
+                                                       'raw', raw_matrix_fig, 'size', emp_size, 'emp_CVs', emp_CVs, 'stats_H0', stats_H0_matrix);
+                else
+                    Paper_Results.(run_label) = struct('params', [T_val, pi0_val, rho_ar, d_val], 'beta_grid', beta_grid, 'power', power_matrix, ...
+                                                       'size', emp_size, 'emp_CVs', emp_CVs, 'stats_H0', stats_H0_matrix);
+                end
+                fprintf_both(fid_log, '    > Power computed successfully.\n');
+            end
+        end
+    end
+
     % --- FINAL SHUTDOWN AND EXPORT ---
-    reset_parallel_pool(fid_log); 
+    reset_parallel_pool(fid_log);
     fclose(fid_log);
     
     out_filename_mat = fullfile(folder_name, sprintf('Paper_Exhibits_Suite_SEC6_%dsims_%s%s_%s.mat', n_sims, upper(run_target), comp_tag, timestamp_file));
@@ -651,6 +800,111 @@ function [Y, D, Z, X] = generate_DGP(T, pi0, theta_strong, theta_weak, beta, gam
     end
 end
 
+function [Y, D, Z, X] = generate_DGP_AR(T, pi0, theta_strong, theta_weak, beta, gamma1, gamma2, rho_innov, rho_e, rho_u, burn_in, Xactive, rng_seed)
+% DGP of the supplement, Section N.D (legacy Sims_Ident_Rob_Tests_AR1*.m): AR(1) errors
+%   e_t = rho_e e_{t-1} + v_{e,t},  u_t = rho_u u_{t-1} + v_{u,t},  corr(v_e, v_u) = rho_innov,
+% started at zero and run for burn_in periods before the sample. The random numbers are drawn
+% in the legacy order (Z, then X, then one mvnrnd per period), so the series are identical.
+    rng(rng_seed, "twister");
+    Sigma_vv = [1 rho_innov; rho_innov 1];
+    mu_vv = [0 0];
+    Z = 1 + randn(T, 1);
+    if Xactive == 1, X = 1 + randn(T, 1); else, X = []; end
+    D = zeros(T, 1); Y = zeros(T, 1);
+    idx_r1 = floor(T/4);
+    idx_r2 = idx_r1 + floor((1 - pi0) * T);
+    e_prev = 0; u_prev = 0;
+    for t = 1:burn_in
+        R_innov = mvnrnd(mu_vv, Sigma_vv, 1);
+        e_prev = rho_e * e_prev + R_innov(1);
+        u_prev = rho_u * u_prev + R_innov(2);
+    end
+    for t = 1:T
+        R_innov = mvnrnd(mu_vv, Sigma_vv, 1);
+        e_t = rho_e * e_prev + R_innov(1);
+        u_t = rho_u * u_prev + R_innov(2);
+        if Xactive == 1
+            if t <= idx_r1 || t > idx_r2
+                D(t) = theta_strong * Z(t) + gamma2 * X(t) + e_t;
+            else
+                D(t) = theta_weak * Z(t) + gamma2 * X(t) + e_t;
+            end
+            Y(t) = beta * D(t) + gamma1 * X(t) + u_t;
+        else
+            if t <= idx_r1 || t > idx_r2
+                D(t) = theta_strong * Z(t) + e_t;
+            else
+                D(t) = theta_weak * Z(t) + e_t;
+            end
+            Y(t) = beta * D(t) + u_t;
+        end
+        e_prev = e_t; u_prev = u_t;
+    end
+end
+
+function [params_MM_base, params_MM_IV_base] = mm_params_for_T(T_val, include_competitors, trim_prop_MM, q_instr_MM, p_param_dim_MM)
+% MM parameter structures of the legacy scripts for a given T (NW kernel, lag floor(T^(1/3))).
+    params_MM_base = struct(); params_MM_IV_base = struct();
+    if include_competitors
+        params_MM_base.hac_method_MM = 'NW';
+        params_MM_base.trim_prop_cv_mm = trim_prop_MM;
+        params_MM_base.q_instr_MM = q_instr_MM;
+        params_MM_base.Lag_NW_s_local = floor(T_val^(1/3));
+        params_MM_base.test_names_MM_fields = {'GMM_S_MM','split_S_MM_Feasible','qLL_S_MM','exp_S_MM','ave_S_MM'};
+        params_MM_IV_base.p_param_dim = p_param_dim_MM;
+        params_MM_IV_base.q_instr = q_instr_MM;
+        params_MM_IV_base.trim_prop_cv_mm = trim_prop_MM;
+        params_MM_IV_base.Lag_NW_s_local = floor(T_val^(1/3));
+        params_MM_IV_base.hac_method_MM = 'NW';
+    end
+end
+
+function [vals, rej_row, raw_row] = evaluate_replication(Y_s, D_s, Z_raw, X_raw, T_val, beta_H0, params_core, rng_seed, Xactive, ...
+                                                          include_competitors, params_MM_base, params_MM_IV_base, theoretical_CVs_MM, alpha_test_MM, p_param_dim_MM, q_instr_MM)
+% One replication: the 6 pi-LATE statistics (+ 9 MM statistics), their rejections at the
+% theoretical/asymptotic CVs (LR/CLR: simulated CV with seed+1, +2; split-CLR: seed+3) and the
+% raw diagnostics [M2_AMS, M2_ST, rk_stat]. Same computations as the Table 9/10 and Figure 7/8
+% routines above, collected in one function for the supplement targets.
+    [stats_AMS, stats_ST, cv_LR] = robust_LATE_inference(Y_s, D_s, Z_raw, X_raw, beta_H0, params_core, rng_seed);
+    vals = [stats_AMS.AR, stats_AMS.LM, stats_AMS.LR, stats_ST.AR, stats_ST.LM, stats_ST.LR];
+    rej_row = [ ...
+        (stats_AMS.AR * params_core.q) > cv_LR.cv_AR, stats_AMS.LM > cv_LR.cv_LM, stats_AMS.LR > cv_LR.cv_AMS, ...
+        (stats_ST.AR * params_core.q)  > cv_LR.cv_AR, stats_ST.LM  > cv_LR.cv_LM, stats_ST.LR  > cv_LR.cv_ST ...
+    ];
+    raw_row = [NaN, NaN, NaN];
+    if include_competitors
+        Mx_MM = eye(T_val);
+        if Xactive == 1 && rank(X_raw'*X_raw) == size(X_raw,2)
+            Mx_MM = eye(T_val) - X_raw*((X_raw'*X_raw)\X_raw');
+        end
+        params_MM_it = params_MM_base;
+        params_MM_it.Mx_s_local_full_T = Mx_MM;
+        params_MM_IV_it = params_MM_IV_base;
+        params_MM_IV_it.Mx_s_local_full_T = Mx_MM;
+        res_MM    = computeMMtests2(Y_s, D_s, Z_raw, X_raw, T_val, beta_H0, params_MM_it);
+        res_MM_IV = computeMM_IVstats2(Y_s, D_s, Z_raw, X_raw, T_val, beta_H0, params_MM_IV_it);
+        vals = [vals, ...
+            res_MM.GMM_S_MM, res_MM.split_S_MM_Feasible, res_MM.qLL_S_MM, res_MM.exp_S_MM, res_MM.ave_S_MM, ...
+            res_MM_IV.split_S_IV, res_MM_IV.split_KLM_IV, res_MM_IV.split_JKLM_IV, res_MM_IV.split_CLR_IV];
+        cv_splitCLR_it = NaN;
+        if ~isnan(res_MM_IV.rk_stat_IV)
+            cv_splitCLR_it = split_CLR_cv_seed(res_MM_IV.rk_stat_IV, p_param_dim_MM, q_instr_MM, alpha_test_MM, rng_seed+3);
+        end
+        rej_row = [rej_row, ...
+            res_MM.GMM_S_MM > theoretical_CVs_MM.GMM_S_MM, ...
+            res_MM.split_S_MM_Feasible > theoretical_CVs_MM.split_S_MM_Feasible, ...
+            res_MM.qLL_S_MM > theoretical_CVs_MM.qLL_S_MM, ...
+            res_MM.exp_S_MM > theoretical_CVs_MM.exp_S_MM, ...
+            res_MM.ave_S_MM > theoretical_CVs_MM.ave_S_MM, ...
+            res_MM_IV.split_S_IV > theoretical_CVs_MM.split_S_IV, ...
+            res_MM_IV.split_KLM_IV > theoretical_CVs_MM.split_KLM_IV, ...
+            res_MM_IV.split_JKLM_IV > theoretical_CVs_MM.split_JKLM_IV, ...
+            res_MM_IV.split_CLR_IV > cv_splitCLR_it ...
+        ];
+        raw_row = [stats_AMS.M2, stats_ST.M2, res_MM_IV.rk_stat_IV];
+    end
+end
+
 %% ========================================================================
 %  EXPORT MODULE (EXACT PIVOTING TO PAPER FORMAT)
 % =========================================================================
@@ -672,9 +926,11 @@ function export_paper_exhibits_sec6_to_txt(Results, n_sims, folder_name, run_tar
     run_t10 = strcmpi(run_target, 'all') || strcmpi(run_target, 'tab10');
     run_f7  = strcmpi(run_target, 'all') || strcmpi(run_target, 'fig7');
     run_f8  = strcmpi(run_target, 'all') || strcmpi(run_target, 'fig8');
-    
+    run_tAR = strcmpi(run_target, 'supp') || strcmpi(run_target, 'tabar');
+    run_fAR = strcmpi(run_target, 'supp') || strcmpi(run_target, 'figar');
+
     % Index mapping [AR_AMS, LM_AMS, LR_AMS, AR_ST, LM_ST, LR_ST]
-    r_idx = [2, 3, 5, 6]; 
+    r_idx = [2, 3, 5, 6];
     r_names = {'LM_T', 'CLR_T', 'LM_T(\\hat{S}_T)', 'CLR_T(\\hat{S}_T)'};
 
     % --- TABLE 9 PIVOTING ---
@@ -784,6 +1040,58 @@ function export_paper_exhibits_sec6_to_txt(Results, n_sims, folder_name, run_tar
         end
     end
 
+    % --- SUPPLEMENT TABLE 2 PIVOTING (AR(1) errors) ---
+    if run_tAR
+        fprintf(fid, 'Supplement Table 2: Finite-Sample Null Rejection Frequencies of Tests (AR(1) errors)\n');
+        fprintf(fid, 'u_t=\\rho_u u_{t-1}+v_{u,t}, e_t=\\rho_e e_{t-1}+v_{e,t}, corr(v_u,v_e)=\\rho=0.50, burn-in 100, \\gamma_1=\\gamma_2=0\n\n');
+        T_grid_AR = [200, 400]; pi0_of_T_AR = [0.8, 0.6]; rho_ar_grid = [0.25, 0.50, 0.75]; d_grid = [10, 16, 24];
+        for iT = 1:length(T_grid_AR)
+            fprintf(fid, '=========================================================================================================================\n');
+            fprintf(fid, 'T=%d, \\pi_0=%.1f    \\rho_e=\\rho_u=0.25              | \\rho_e=\\rho_u=0.50              | \\rho_e=\\rho_u=0.75\n', T_grid_AR(iT), pi0_of_T_AR(iT));
+            fprintf(fid, 'Test                d=10    d=16    d=24    | d=10    d=16    d=24    | d=10    d=16    d=24\n');
+            fprintf(fid, '-------------------------------------------------------------------------------------------------------------------------\n');
+            for k = 1:length(r_idx)
+                fprintf(fid, '%-19s', r_names{k});
+                for rho = rho_ar_grid
+                    for d = d_grid
+                        lbl = sprintf('TabAR_T%d_rho%02d_d%d', T_grid_AR(iT), rho*100, d);
+                        if isfield(Results, lbl), val = Results.(lbl).size(r_idx(k)); else, val = NaN; end
+                        fprintf(fid, ' %5.3f  ', val);
+                    end
+                    if rho ~= 0.75, fprintf(fid, ' |'); end
+                end
+                fprintf(fid, '\n');
+            end
+        end
+        fprintf(fid, '=========================================================================================================================\n\n');
+    end
+
+    % --- SUPPLEMENT FIGURE 1 PIVOTING (AR(1) errors) ---
+    if run_fAR
+        figAR_fields = fields_all(startsWith(fields_all, 'FigAR_'));
+        if ~isempty(figAR_fields)
+            fprintf(fid, '============================================================================================================\n');
+            fprintf(fid, ' SUPPLEMENT FIGURE 1: Size-Adjusted Power, AR(1) errors (T=400, \\pi_0=0.6, \\rho=0.50)\n');
+            fprintf(fid, '============================================================================================================\n');
+            for i = 1:length(figAR_fields)
+                res = Results.(figAR_fields{i});
+                fprintf(fid, '>>> Scenario: %s   [T=%d, pi0=%.1f, rho_e=rho_u=%.2f, d=%d]\n', figAR_fields{i}, res.params(1), res.params(2), res.params(3), res.params(4));
+                fprintf(fid, '      %4s | %6s | %6s | %6s || %6s | %6s | %6s |\n', 'Beta', 'AR_AMS', 'LM_AMS', 'LR_AMS', 'AR_ST', 'LM_ST', 'LR_ST');
+                fprintf(fid, '      -----------------------------------------------------------------------\n');
+                for b_idx = 1:length(res.beta_grid)
+                    beta_lbl = sprintf('%4.2f', res.beta_grid(b_idx));
+                    if res.beta_grid(b_idx) == 0.0, beta_lbl = 'SIZE'; end
+                    fprintf(fid, '      %4s | %6.4f | %6.4f | %6.4f || %6.4f | %6.4f | %6.4f |\n', ...
+                        beta_lbl, res.power(b_idx,1), res.power(b_idx,2), res.power(b_idx,3), ...
+                        res.power(b_idx,4), res.power(b_idx,5), res.power(b_idx,6));
+                end
+                fprintf(fid, '      -- Null rejection frequencies at the asymptotic CVs (same H0 draws as Table 2) --\n');
+                fprintf(fid, '      %4s | %6.4f | %6.4f | %6.4f || %6.4f | %6.4f | %6.4f |\n', 'H0cv', res.size(1), res.size(2), res.size(3), res.size(4), res.size(5), res.size(6));
+                fprintf(fid, '\n');
+            end
+        end
+    end
+
     fclose(fid);
 end
 
@@ -821,6 +1129,8 @@ function export_paper_exhibits_sec6_MM_to_txt(Results, n_sims, folder_name, run_
     run_t10 = strcmpi(run_target, 'all') || strcmpi(run_target, 'tab10');
     run_f7  = strcmpi(run_target, 'all') || strcmpi(run_target, 'fig7');
     run_f8  = strcmpi(run_target, 'all') || strcmpi(run_target, 'fig8');
+    run_tAR = strcmpi(run_target, 'supp') || strcmpi(run_target, 'tabar');
+    run_fAR = strcmpi(run_target, 'supp') || strcmpi(run_target, 'figar');
 
     rej_labels = cellfun(@(f) display_labels.(f), rej_names_all, 'UniformOutput', false);
     raw_labels = cellfun(@(f) display_labels.(f), raw_names_all, 'UniformOutput', false);
@@ -961,6 +1271,92 @@ function export_paper_exhibits_sec6_MM_to_txt(Results, n_sims, folder_name, run_
                     row_str = strjoin(arrayfun(@(x) sprintf('%6.4f',x), res.power(b_idx,:), 'UniformOutput', false), ' | ');
                     fprintf(fid, '      %-6s | %s\n', beta_lbl, row_str);
                 end
+                fprintf(fid, '      -- Raw diagnostics (mean trajectory, no rejection rule: %s) --\n', strjoin(raw_labels, ', '));
+                for b_idx = 1:length(res.beta_grid)
+                    beta_lbl = sprintf('%4.2f', res.beta_grid(b_idx));
+                    if res.beta_grid(b_idx) == 0.0, beta_lbl = 'SIZE'; end
+                    row_str = strjoin(arrayfun(@(x) sprintf('%6.4f',x), res.raw(b_idx,:), 'UniformOutput', false), ' | ');
+                    fprintf(fid, '      %-6s | %s\n', beta_lbl, row_str);
+                end
+                fprintf(fid, '\n');
+            end
+        end
+    end
+
+    % --- SUPPLEMENT TABLE 2 PIVOTING (AR(1) errors) ---
+    if run_tAR
+        fprintf(fid, 'Supplement Table 2 (MM-extended): Finite-Sample Null Rejection Frequencies of Tests (AR(1) errors)\n');
+        fprintf(fid, 'u_t=\\rho_u u_{t-1}+v_{u,t}, e_t=\\rho_e e_{t-1}+v_{e,t}, corr(v_u,v_e)=\\rho=0.50, burn-in 100, \\gamma_1=\\gamma_2=0 (Model M1)\n\n');
+        T_grid_AR = [200, 400]; pi0_of_T_AR = [0.8, 0.6]; rho_ar_grid = [0.25, 0.50, 0.75]; d_grid = [10, 16, 24];
+        for iT = 1:length(T_grid_AR)
+            fprintf(fid, '=========================================================================================================================\n');
+            fprintf(fid, 'T=%d, \\pi_0=%.1f    \\rho_e=\\rho_u=0.25 | \\rho_e=\\rho_u=0.50 | \\rho_e=\\rho_u=0.75   (d = 10 16 24 within each block)\n', T_grid_AR(iT), pi0_of_T_AR(iT));
+            fprintf(fid, '-------------------------------------------------------------------------------------------------------------------------\n');
+            for k = 1:length(rej_names_all)
+                fprintf(fid, '%-18s', rej_labels{k});
+                for rho = rho_ar_grid
+                    for d = d_grid
+                        lbl = sprintf('TabAR_T%d_rho%02d_d%d', T_grid_AR(iT), rho*100, d);
+                        if isfield(Results, lbl), val = Results.(lbl).size(k); else, val = NaN; end
+                        fprintf(fid, ' %6.4f', val);
+                    end
+                    if rho ~= 0.75, fprintf(fid, '  |'); end
+                end
+                fprintf(fid, '\n');
+            end
+            fprintf(fid, '- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -\n');
+            fprintf(fid, 'Raw diagnostics (mean, no rejection rule):\n');
+            for k = 1:length(raw_names_all)
+                fprintf(fid, '%-18s', raw_labels{k});
+                for rho = rho_ar_grid
+                    for d = d_grid
+                        lbl = sprintf('TabAR_T%d_rho%02d_d%d', T_grid_AR(iT), rho*100, d);
+                        if isfield(Results, lbl), val = Results.(lbl).raw(k); else, val = NaN; end
+                        fprintf(fid, ' %6.4f', val);
+                    end
+                    if rho ~= 0.75, fprintf(fid, '  |'); end
+                end
+                fprintf(fid, '\n');
+            end
+            fprintf(fid, 'Empirical 95th percentiles under H0 (size-adjusted CVs):\n');
+            for k = 1:length(rej_names_all)
+                fprintf(fid, '%-18s', rej_labels{k});
+                for rho = rho_ar_grid
+                    for d = d_grid
+                        lbl = sprintf('TabAR_T%d_rho%02d_d%d', T_grid_AR(iT), rho*100, d);
+                        if isfield(Results, lbl), val = Results.(lbl).emp_CVs(k); else, val = NaN; end
+                        fprintf(fid, ' %6.3f', val);
+                    end
+                    if rho ~= 0.75, fprintf(fid, '  |'); end
+                end
+                fprintf(fid, '\n');
+            end
+        end
+        fprintf(fid, '=========================================================================================================================\n\n');
+    end
+
+    % --- SUPPLEMENT FIGURE 1 PIVOTING (AR(1) errors) ---
+    if run_fAR
+        figAR_fields = fields_all(startsWith(fields_all, 'FigAR_'));
+        if ~isempty(figAR_fields)
+            fprintf(fid, '============================================================================================================\n');
+            fprintf(fid, ' SUPPLEMENT FIGURE 1 (MM-extended): Size-Adjusted Power, AR(1) errors (T=400, \\pi_0=0.6, \\rho=0.50)\n');
+            fprintf(fid, '============================================================================================================\n');
+            for i = 1:length(figAR_fields)
+                res = Results.(figAR_fields{i});
+                fprintf(fid, '>>> Scenario: %s   [T=%d, pi0=%.1f, rho_e=rho_u=%.2f, d=%d]\n', figAR_fields{i}, res.params(1), res.params(2), res.params(3), res.params(4));
+                fprintf(fid, '      %-6s | %s\n', 'Beta', strjoin(rej_labels, ' | '));
+                fprintf(fid, '      ----------------------------------------------------------------------------------------------\n');
+                for b_idx = 1:length(res.beta_grid)
+                    beta_lbl = sprintf('%4.2f', res.beta_grid(b_idx));
+                    if res.beta_grid(b_idx) == 0.0, beta_lbl = 'SIZE'; end
+                    row_str = strjoin(arrayfun(@(x) sprintf('%6.4f',x), res.power(b_idx,:), 'UniformOutput', false), ' | ');
+                    fprintf(fid, '      %-6s | %s\n', beta_lbl, row_str);
+                end
+                fprintf(fid, '      -- Null rejection frequencies at the asymptotic CVs (same H0 draws as Table 2) --\n');
+                fprintf(fid, '      %-6s | %s\n', 'H0cv', strjoin(arrayfun(@(x) sprintf('%6.4f',x), res.size, 'UniformOutput', false), ' | '));
+                fprintf(fid, '      -- Empirical 95th percentiles under H0 (size-adjusted CVs) --\n');
+                fprintf(fid, '      %-6s | %s\n', 'CV95', strjoin(arrayfun(@(x) sprintf('%6.3f',x), res.emp_CVs, 'UniformOutput', false), ' | '));
                 fprintf(fid, '      -- Raw diagnostics (mean trajectory, no rejection rule: %s) --\n', strjoin(raw_labels, ', '));
                 for b_idx = 1:length(res.beta_grid)
                     beta_lbl = sprintf('%4.2f', res.beta_grid(b_idx));
