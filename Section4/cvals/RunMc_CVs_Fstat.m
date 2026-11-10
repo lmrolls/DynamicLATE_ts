@@ -8,7 +8,7 @@ function RunMc_CVs_Fstat()
 
     %% 1. Configurazione della Griglia
     q_values      = [1, 2, 3, 4, 5, 10];
-    piLow_values  = [0.5, 0.6, 0.7, 0.8, 0.9, 1.0];
+    piLow_values  = [0.5, 0.6, 0.7, 0.8, 0.9, 0.95, 1.0];   % 0.95 restored: row of the published Table 4 (export of 6/7/2026)
     T             = 1000;
     totreps       = 10000; 
 

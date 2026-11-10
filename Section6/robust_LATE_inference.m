@@ -174,7 +174,11 @@ function stats = computeStats_Internal(Y, D, Zbar, X, T_eff, q, p, a, b, is_ST, 
     Sigma_N1N2_hat    = NeweyWest_N1N2((v_hat * b .* Zbar), (v_hat * inv(Sigma_v_hat) * a .* Zbar), Lag, 0);
     Sigma_N2_hat      = Sigma_N2star_hat - Sigma_N1N2_hat * inv(Sigma_N1_hat_main) * Sigma_N1N2_hat';
     
-    if is_ST
+    if is_ST && q == 1
+        % Legacy 'ST' rule: N1 with the smaller of the HAC and lag-0 scalings. Only for q = 1,
+        % as in the legacy multi-instrument computeStats.m (section_6_Multiple_IVs): for q > 1
+        % an elementwise min of two matrix square roots has no meaning and the legacy code
+        % used the HAC scaling alone (supplement Table 3 / Figure 2). Unchanged for q = 1.
         Sigma_N1_hat_lag0 = NeweyWest(v_hat * b, Zbar, 0, 0);
         N1_val = min(Sigma_N1_hat_main^(-1/2), Sigma_N1_hat_lag0^(-1/2)) * T_eff^(-1/2) * Zbar' * y * b;
     else
