@@ -97,10 +97,28 @@ run runSection5_Simul.m
 
 ### `Section6`: Robust Inference
 Contains the codebase for computing size and size-adjusted power of identification-robust tests (Section 6).
-* `runSection6_Simul.m`: Master script executing the computational suite for Tables 9-10 and Figures 7-8.
+* `runSection6_Simul.m`: Master script executing the computational suite for Tables 9-10 and Figures 7-8, and for the supplement (Section N.D): `'tabAR'` / `'figAR'` (Table 2 and Figure 1 of the supplement, AR(1) errors), `'tabMIV'` / `'figMIV'` (Table 3 and Figure 2 of the supplement, three instruments), `'suppAR'`, `'suppMIV'`, `'supp'`. The supplement targets use the seeds of the legacy scripts; the published runs used 10 000 replications for the AR(1) exhibits and 5 000 for the three-instrument ones.
 * `robust_LATE_inference.m`: Unified engine generating the Anderson-Rubin, Lagrange Multiplier, and Conditional Likelihood Ratio statistics evaluated at the estimated partition $\hat{S}_T$.
 
 **Example of usage:**
 ```matlab 
-run runSection6_Simul.m
+run runSection6_Simul.m                      % Tables 9-10, Figures 7-8
+runSection6_Simul(10000, 'suppAR', true);    % supplement, AR(1) errors (Table 2, Figure 1)
+runSection6_Simul(5000, 'suppMIV', true);    % supplement, three instruments (Table 3, Figure 2)
+```
+
+### `Section7`: Empirical Application
+Reproduces the exhibits of Section 7 (monetary policy, Nakamura-Steinsson data in `m_break/dataForMatlabAltEstTick.csv`). Each driver is the legacy script of the replication package turned into a function; results are written to a `Paper_Exhibits_Results_SEC7_*` folder.
+* `runSection7_Table1.m`: Table 1, $F_T^*$ tests for identification failure (30-minute policy news and 1-day 2-Year yields, $\pi_L \in \{0.6,\dots,1\}$).
+* `runSection7_Table2.m`: Table 2 (TSLS and GMM estimates of $\beta$, full sample and $\hat{\pi}$-sample) and Figure 3 (strongly-identified subsample). The GMM rows use the replication code of Lewis (2022), which is not distributed here: copy its `estimation` folder into `Section7/external/Lewis2022/` (or pass its path as second argument); without it the table is produced with the TSLS rows only.
+* `runSection7_Table3.m`: Table 3, weak identification-robust inference on $\beta$ (LM and CLR, full sample and $\hat{S}_T$, three significance levels).
+* `runSection7_Compliers.m`: Section 7.4, identification of compliers (Figure 4, share of compliers) and test of the exclusion restriction.
+* `runSection7_Figure1.m`: Figure 1, survey of first-stage $F$ and $F^*$ statistics (data in `Section7/data/`).
+* `runSection7_Figure2.m`: Figure 2, break dates in the 2-Year yields from the Casini-Perron (2024) All-Inside procedure, an external dependency: copy the folder `All-Inside_Matlab` into `Section7/external/AllInside/` (or pass its path); without it the published dates are plotted.
+* `legacy_IRI/`, `legacy_mbreak/`: helper functions of the replication package used verbatim (`S_Dates_m_M2_Heter`, `LR_critical_value`, `F_ST_Stat`, `TSLS_Robust`).
+
+**Example of usage:**
+```matlab 
+cd Section7
+runSection7_Table1(); runSection7_Table2(); runSection7_Table3(); runSection7_Compliers(); runSection7_Figure1(); runSection7_Figure2();
 ```
