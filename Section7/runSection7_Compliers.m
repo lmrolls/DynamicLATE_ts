@@ -25,7 +25,8 @@ function Results = runSection7_Compliers(lag_rule, S_hat_fig, verbose)
 %     (non-compliers with D^2 above/below their mean) with the same statistic.
 %   * Figure 4: D in the control and policy samples, markers for compliers (green) / non-compliers (red), rectangles
 %     for S_hat_{T,OLS}. S_hat_fig: regimes in the re-ordered sample; default = the one hard-coded in the exclusion
-%     scripts ([1 98; 145 302; 425 472; 473 762; 763 836], pi_hat = 0.8, T_C = 762), i.e. the published S_hat.
+%     scripts ([1 98; 145 302; 425 472; 473 762; 763 836], pi_hat = 0.8, T_C = 762), i.e. the published S_hat, which
+%     is also what runSection7_Table2 returns with its default h_rule 'T_C' (h = round(eps1*T_C) = 38).
 %
 %   Results = runSection7_Compliers()           % lag floor(n0^(1/3)) = 4 for the compliers t-test (Figure script)
 %   Results = runSection7_Compliers(0)          % lag 0 (exclusion scripts)

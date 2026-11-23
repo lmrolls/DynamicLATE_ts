@@ -122,3 +122,16 @@ Reproduces the exhibits of Section 7 (monetary policy, Nakamura-Steinsson data i
 cd Section7
 runSection7_Table1(); runSection7_Table2(); runSection7_Table3(); runSection7_Compliers(); runSection7_Figure1(); runSection7_Figure2();
 ```
+
+### Exhibit numbering: arXiv v1 vs. v2
+The exhibit numbers used throughout this repository (folder READMEs, targets such as `'tab10'`, export headers, result file names) are those of arXiv v1. The submitted version (arXiv v2) moved some exhibits and renumbered them; the correspondence is:
+
+| Repository (v1) | arXiv v2 | Where in v2 |
+|---|---|---|
+| Tables 1-3, Figures 1-4 (Sections 1 and 7) | unchanged | main text |
+| Table 4 (critical values of $F_T^*$) | Table 4 | online supplement, Section S.A |
+| Table 5, Figures 5-6 (Section 4) | unchanged | online supplement, Section S.C.1 |
+| Tables 6-8 (Section 5) | Tables 2-4 | supplement not for online publication, Section N.F.1 |
+| Tables 9-10, Figures 7-8 (Section 6) | Tables 6-7, Figures 7-8 | online supplement, Section S.C.2 |
+| "Supplement Table 2", "Supplement Figure 1" (AR(1) errors; code comments say Section N.D) | Table 5, Figure 1 | supplement not for online publication, Section N.F.2 |
+| "Supplement Table 3", "Supplement Figure 2" (three instruments, model (N.1)-(N.2)) | Table 6, Figure 2 | supplement not for online publication, Section N.F.2 |

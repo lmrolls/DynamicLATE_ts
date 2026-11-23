@@ -11,18 +11,18 @@ function Results = runSection7_Table1(h_rule, verbose)
 % statistic is the full-sample F. The treatment block is always in S (S_Dates_m_Heter). The legacy call
 % Procedure_pi_LATE(...) (printing only, no output used) is omitted.
 %
-% h_rule: minimal segment length of the Bai-Perron dating on the control sample. The script in the package has
-%   h = round(eps1*T_C) = 38 ('T_C'); the published Table 1 is reproduced (1-day column, pi_L = 0.8, 0.9, 1 exactly)
-%   with h = round(eps1*T) = 42 ('T', default), the rule of the Table 3 script. Both are available; the full-sample
-%   value (pi_L = 1) does not depend on h.
+% h_rule: minimal segment length of the Bai-Perron dating on the control sample. 'T_C' (default): h = round(eps1*T_C) = 38,
+%   as in the package script; this reproduces the published Table 1 exactly (all 10 cells, MATLAB check of 20/11/2026,
+%   job_43b). 'T': h = round(eps1*T) = 42, the rule of the Table 3 script (Octave had suggested it; MATLAB does not
+%   confirm). Both are available; the full-sample column (pi_L = 1) does not depend on h.
 % Critical values: the published Table 4 (q = 1; Section4\cvals\RunMc_CVs_Fstat.m), reported for reference.
 % Published 30-minute row: "10^4 x 7.42" etc.; the statistic is 7 416 (same code and scaling as the 1-day
 % value 8.09, reproduced exactly), i.e. the published scale factor reads 10^3.
 %
 %   Results = runSection7_Table1()            % h = round(eps1*T), both D's: 30-minute policy news and 1-day DNY2
-%   Results = runSection7_Table1('T_C')       % h = round(eps1*T_C), as in the package script
+%   Results = runSection7_Table1('T')         % h = round(eps1*T) = 42 instead of the package rule
 % =========================================================================
-    if nargin < 1 || isempty(h_rule), h_rule = 'T'; end
+    if nargin < 1 || isempty(h_rule), h_rule = 'T_C'; end
     if nargin < 2 || isempty(verbose), verbose = true; end
     restoredefaultpath;
     addpath('..\m_break');          % Procedure_piL_Full_Sample, S_Dates_m_Heter, OLS_Robust_VarXe, NeweyWest

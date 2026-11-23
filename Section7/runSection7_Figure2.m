@@ -1,4 +1,4 @@
-function Results = runSection7_Figure2(external_dir, break_dates, verbose)
+function Results = runSection7_Figure2(external_dir, break_dates, verbose, rng_seed)
 % RUNSECTION7_FIGURE2  Figure 2 of the paper (Section 7.1): 1-day changes in 2-Year Treasury yields in the control
 % sample (top) and in the policy sample (bottom), with the break dates estimated in the control sample by the
 % Casini-Perron (2024) "All-Inside" change-point procedure for the spectrum.
@@ -12,12 +12,15 @@ function Results = runSection7_Figure2(external_dir, break_dates, verbose)
 %     nak_data.mat and sub-folders) and the break dates are read from the Breakdates.mat it saves;
 %   * else, if Breakdates.mat is found there, its Break_Dates_Final is used;
 %   * else the break dates given in break_dates (default: the published [320 436 583]) are plotted and flagged.
+%   The 4th argument rng_seed ('default', a number, or [] to leave the generator state alone) fixes the seed before the
+%   run: All-Inside uses randsample without a seed, so its third break date is run-dependent (583 vs 568 observed).
 % The series plotted are DNY2 (observations 401:end of ..\m_break\dataForMatlabAltEstTick.csv) split by FOMCused,
 % identical to DNY_C / DNY_P of nak_data.mat. Output: .txt with the break dates and their calendar dates, .png.
 % =========================================================================
     if nargin < 1 || isempty(external_dir), external_dir = fullfile('external', 'AllInside'); end
     if nargin < 2 || isempty(break_dates), break_dates = [320 436 583]; end
     if nargin < 3 || isempty(verbose), verbose = true; end
+    if nargin < 4, rng_seed = 'default'; end   % [] = leave the generator state alone (what the legacy run did)
     folder_name = 'Paper_Exhibits_Results_SEC7_FIGURE2';
     if ~exist(folder_name, 'dir'), mkdir(folder_name); end
     timestamp_file = char(datetime('now', 'Format', 'yyyyMMdd_HHmmss'));
@@ -31,8 +34,12 @@ function Results = runSection7_Figure2(external_dir, break_dates, verbose)
     source = 'published values (All-Inside code not found)';
     if exist(fullfile(external_dir, 'All_Inside.m'), 'file') == 2
         try
-            cd(external_dir); evalc('run(''All_Inside.m'')'); cd(here);
-            L = load(fullfile(external_dir, 'Breakdates.mat')); break_dates = double(L.Break_Dates_Final(:)'); source = 'All_Inside.m run now';
+            % All-Inside subsamples with randsample (general\Algorithm1_*.m) without fixing a seed, so its break dates depend
+            % on the state of the random number generator: on this data [320 436 583] (published) was obtained in one run
+            % and [320 436 568] in another. The seed is therefore fixed here (default: rng('default')) and recorded.
+            if ~isempty(rng_seed), if ischar(rng_seed) || isstring(rng_seed), rng(rng_seed); else, rng(rng_seed, 'twister'); end; end
+            run_external_script(external_dir, 'All_Inside.m');   % in its own workspace: its 'clear all' cannot touch ours
+            L = load(fullfile(external_dir, 'Breakdates.mat')); break_dates = double(L.Break_Dates_Final(:)'); source = sprintf('All_Inside.m run now (rng %s)', seed_label(rng_seed));
         catch ME
             cd(here); if verbose, fprintf('All_Inside.m failed: %s\n', ME.message); end
             if exist(fullfile(external_dir, 'Breakdates.mat'), 'file') == 2
@@ -61,6 +68,21 @@ function Results = runSection7_Figure2(external_dir, break_dates, verbose)
         if verbose, fprintf('Figure 2 not drawn: %s\n', ME.message); end
     end
     save(fullfile(folder_name, sprintf('Figure2_Breaks_%s.mat', timestamp_file)), 'Results');
+end
+
+function s = seed_label(rng_seed)
+    if isempty(rng_seed), s = 'untouched'; elseif ischar(rng_seed) || isstring(rng_seed), s = char(rng_seed); else, s = sprintf('%g', rng_seed); end
+end
+
+function run_external_script(folder, script)
+% Runs an external script from its own folder inside this function's workspace, with 'clear all' / 'clearvars' / 'clc' /
+% 'close all' neutralised (All_Inside.m starts with 'clear all; clc;': run from the caller's workspace it wiped the
+% caller's variables). The script is evaluated as text, so its relative paths resolve in 'folder'.
+    old__ = cd(folder); c__ = onCleanup(@() cd(old__));   % names the external script is unlikely to overwrite
+    txt__ = fileread(fullfile(folder, script));
+    if ~isempty(regexp(txt__, '(?m)^\s*function\b', 'once')), error('%s defines local functions: cannot be evaluated as text.', script); end
+    txt__ = regexprep(txt__, '(?<![\w.''"])(clear\s+all|clearvars|clc|close\s+all)(?!\w)\s*;?', ' ;');
+    evalc(txt__);
 end
 
 function c = read_first_column(fname)

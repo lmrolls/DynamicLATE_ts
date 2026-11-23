@@ -8,9 +8,11 @@ function Results = runSection7_Table2(h_rule, external_dir, verbose)
 %   * S_hat_{T,OLS}: from D = 1-day 2-Year yields (DNY2) only, dating of the control sample (Procedure_piL_Full_Sample,
 %     m = 5, eps1 = 0.05), selection by the first-stage F (S_Dates_m_Heter, F_ST_Stat with Hac_option = 0) over
 %     pi_L in {0.8, 0.9, 1}, pi in pi_L:0.05:1, m = 1..5; pi_hat = pi of the sup. The same S_hat is used for the
-%     30-minute policy news. h_rule: the script in the package has h = round(eps1*T_C) = 38 ('T_C'); the published
-%     Table 2 and the description of S_hat in the text (excluded: early 2005 and the financial-crisis regime) are
-%     reproduced with h = round(eps1*T) = 42 ('T', default), as for Table 1. Both give pi_hat = 0.8, m_hat = 4.
+%     30-minute policy news. h_rule: 'T_C' (default) is the rule of the package script, h = round(eps1*T_C) = 38: it
+%     gives pi_hat = 0.8, m_hat = 3 and the published S_hat (control regimes [1,98] [145,302] [425,472] [473,762], the
+%     one hard-coded in the compliers scripts) and reproduces the published TSLS rows (MATLAB check of 21/11/2026,
+%     job_46; the published upper bound 1.30 of the 1-day nominal pi-sample CI reads 1.33: the CI is symmetric about
+%     1.13). 'T': h = round(eps1*T) = 42 (pi_hat = 0.8, m_hat = 5), kept for comparison.
 %   * TSLS rows: TSLS_Robust (legacy_mbreak, verbatim; HAC = 0, heteroskedasticity-robust SE with the small-sample
 %     factor n/(n-k-1)); standard 95% CI = beta +- 1.96 SE; stars at 10/5/1% (two-sided normal).
 %   * GMM rows (Lewis 2022: GMM on the second moments of the two regimes, robust CI by inversion of the subset
@@ -28,9 +30,9 @@ function Results = runSection7_Table2(h_rule, external_dir, verbose)
 %     ratio, the 3/5/10-year forwards, the loads of nak_data.mat / results_nak.mat / time.mat (unused by estimate).
 %
 %   Results = runSection7_Table2()                 % h = round(eps1*T), GMM if Section7\external\Lewis2022 exists
-%   Results = runSection7_Table2('T_C', 'C:\...\estimation')   % h of the package script, Lewis's code elsewhere
+%   Results = runSection7_Table2('T', 'C:\...\estimation')     % h = round(eps1*T) = 42, Lewis's code elsewhere
 % =========================================================================
-    if nargin < 1 || isempty(h_rule), h_rule = 'T'; end
+    if nargin < 1 || isempty(h_rule), h_rule = 'T_C'; end
     if nargin < 2 || isempty(external_dir), external_dir = fullfile('external', 'Lewis2022'); end
     if nargin < 3 || isempty(verbose), verbose = true; end
     restoredefaultpath;

@@ -1,0 +1,9 @@
+# Output folders written by the drivers (Section4/5/6/7) and local change logs
+**/Paper_Exhibits_Results_*/
+**/Results_CV_Export/
+_CHANGES_*.md
+# External code not distributed with the repository (see README, Section7)
+Section7/external/
+# Local job queue and batch helpers (not part of the replication package)
+_jobs/
+_bat/
